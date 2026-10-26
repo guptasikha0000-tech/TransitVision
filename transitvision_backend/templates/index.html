@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TransitVision - Smart Station Navigation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Theme Modes */
+        body.theme-light {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+        }
+        body.theme-light .glass-card {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            color: #0f172a !important;
+        }
+        body.theme-light select, body.theme-light input {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        body.theme-light .text-slate-400, body.theme-light .text-slate-300 {
+            color: #475569 !important;
+        }
+        body.theme-light .bg-slate-900, body.theme-light .bg-slate-950 {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+        body.theme-emerald {
+            background-color: #022c22 !important;
+            color: #ecfdf5 !important;
+        }
+        body.theme-emerald .glass-card {
+            background: rgba(6, 78, 59, 0.8) !important;
+            border: 1px solid rgba(52, 211, 153, 0.2) !important;
+            color: #ecfdf5 !important;
+        }
+        body.theme-emerald select, body.theme-emerald input {
+            background-color: #022c22 !important;
+            color: #ecfdf5 !important;
+            border-color: #059669 !important;
+        }
+
+        body.theme-indigo {
+            background-color: #1e1b4b !important;
+            color: #e0e7ff !important;
+        }
+        body.theme-indigo .glass-card {
+            background: rgba(49, 46, 129, 0.8) !important;
+            border: 1px solid rgba(129, 140, 248, 0.2) !important;
+            color: #e0e7ff !important;
+        }
+        body.theme-indigo select, body.theme-indigo input {
+            background-color: #1e1b4b !important;
+            color: #e0e7ff !important;
+            border-color: #6366f1 !important;
+        }
+        
+        /* Font Scaling Modes */
+        body.text-lg-mode { font-size: 1.15rem; }
+        body.text-xl-mode { font-size: 1.3rem; }
+    
+        /* TransitVision 2.0 — redesigned responsive dashboard */
+        :root { color-scheme: dark; --tv-bg:#07111f; --tv-panel:#0e1c2d; --tv-panel2:#13263a; --tv-line:rgba(148,190,214,.18); --tv-mint:#4de0bd; --tv-cyan:#67d9f4; }
+        html { background:var(--tv-bg); }
+        body#appBody { display:flex; align-items:flex-start; justify-content:center; padding:26px 18px 48px; background:radial-gradient(ellipse at 12% 0%,rgba(27,103,132,.28),transparent 38%),radial-gradient(ellipse at 100% 20%,rgba(57,78,158,.2),transparent 34%),var(--tv-bg)!important; color:#edf7ff; }
+        body#appBody > div.w-full.max-w-md { width:min(1120px,100%)!important; max-width:1120px!important; margin:0 auto!important; border:1px solid var(--tv-line)!important; border-radius:30px!important; overflow:hidden; background:#091625!important; box-shadow:0 32px 100px rgba(0,0,0,.42)!important; }
+        body#appBody header { background:linear-gradient(110deg,#0b2638 0%,#123b51 54%,#18355c 100%)!important; padding:23px 30px!important; border-bottom:1px solid rgba(103,217,244,.24); box-shadow:none!important; }
+        body#appBody header h1 { font-size:clamp(1.4rem,2.5vw,2rem)!important; letter-spacing:-.045em!important; }
+        body#appBody header p { font-size:11px!important; letter-spacing:.09em; text-transform:uppercase; }
+        body#appBody #appTab, body#appBody #savedTab { padding:28px!important; }
+        body#appBody .glass-card { background:linear-gradient(145deg,rgba(17,36,55,.96),rgba(11,26,42,.96))!important; border:1px solid var(--tv-line)!important; border-radius:22px!important; box-shadow:0 10px 30px rgba(0,0,0,.12); backdrop-filter:blur(12px); }
+        body#appBody .glass-card h2, body#appBody .glass-card h3 { letter-spacing:-.025em; }
+        body#appBody select, body#appBody input:not([type=file]), body#appBody textarea { min-height:48px; border-radius:14px!important; background:#071321!important; border:1px solid rgba(133,184,211,.26)!important; color:#f3fbff!important; font-size:14px!important; padding:12px 14px!important; }
+        body#appBody select:focus, body#appBody input:focus { outline:none; border-color:var(--tv-mint)!important; box-shadow:0 0 0 3px rgba(77,224,189,.12)!important; }
+        body#appBody button { border-radius:13px; transition:transform .18s ease,filter .18s ease,box-shadow .18s ease; }
+        body#appBody button:hover { filter:brightness(1.09); transform:translateY(-1px); }
+        body#appBody button:focus-visible, body#appBody summary:focus-visible { outline:2px solid var(--tv-mint); outline-offset:3px; }
+        body#appBody #screen1 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:stretch; gap:20px; }
+        body#appBody #screen1 > .glass-card { margin:0; padding:25px!important; }
+        body#appBody #screen1 > .glass-card:first-child { border-top:3px solid #67d9f4!important; }
+        body#appBody #screen1 > .glass-card:last-child { border-top:3px solid var(--tv-mint)!important; }
+        body#appBody #screen1 h2 { font-size:1.12rem!important; }
+        body#appBody #screen1 h3 { font-size:.78rem!important; letter-spacing:.08em; }
+        body#appBody #screen2, body#appBody #screen3, body#appBody #screen4 { max-width:850px; margin:0 auto; }
+        body#appBody #screen2 > .glass-card, body#appBody #screen3 > .glass-card { padding:30px!important; }
+        body#appBody #screen2 button[onclick*="selectTargetStation"] { background:#10273a!important; border-color:rgba(103,217,244,.3)!important; min-height:92px; }
+        body#appBody #screen2 button[onclick*="selectTargetStation"]:hover { border-color:var(--tv-mint)!important; }
+        body#appBody #screen3 label { display:block; font-size:.76rem!important; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:#9bb8c9!important; margin-bottom:8px!important; }
+        body#appBody #screen3 select { margin-bottom:7px; }
+        body#appBody #screen3 button[onclick="renderFinalNavigation()"] { min-height:52px; background:linear-gradient(100deg,#0e9f82,#16b8a0)!important; box-shadow:0 10px 25px rgba(22,184,160,.16); }
+        body#appBody #screen4 #visualTitle { font-size:clamp(1.1rem,3vw,1.65rem)!important; line-height:1.25; }
+        body#appBody #stepsList > div { padding:16px!important; border-radius:16px!important; background:rgba(16,39,57,.82)!important; border:1px solid rgba(103,217,244,.13)!important; }
+        body#appBody #stationFacilities summary { font-size:.84rem!important; }
+        body#appBody #gpsProximityCard { border-color:rgba(248,113,113,.35)!important; }
+        body#appBody #savedTab { min-height:45vh; }
+        #tvHero { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:25px 30px 27px; margin:0; background:linear-gradient(100deg,rgba(13,36,53,.98),rgba(10,28,45,.9)); border-bottom:1px solid var(--tv-line); }
+        #tvHero .tv-eyebrow { display:inline-flex; align-items:center; gap:8px; margin-bottom:10px; color:var(--tv-mint); font-size:10px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+        #tvHero .tv-eyebrow:before { content:""; width:20px; height:2px; background:var(--tv-mint); border-radius:2px; }
+        #tvHero h2 { margin:0; color:#f2fbff; font-size:clamp(1.35rem,3.1vw,2.2rem); line-height:1.08; font-weight:850; letter-spacing:-.045em; }
+        #tvHero p { margin:10px 0 0; max-width:580px; color:#a7c0d0; font-size:13px; line-height:1.65; }
+        #tvHero .tv-rail-visual { position:relative; flex:0 0 210px; height:68px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; }
+        #tvHero .tv-rail-line { position:absolute; left:26px; right:26px; top:33px; height:3px; border-radius:3px; background:linear-gradient(90deg,#4de0bd,#67d9f4); box-shadow:0 0 18px rgba(77,224,189,.22); }
+        #tvHero .tv-stop { z-index:1; width:17px; height:17px; border-radius:50%; background:#0c2132; border:4px solid var(--tv-mint); box-shadow:0 0 0 5px rgba(77,224,189,.1); }
+        #tvHero .tv-stop:last-child { border-color:var(--tv-cyan); }
+        #tvHero .tv-route-label { position:absolute; bottom:0; left:0; right:0; text-align:center; color:#8eafc2; font-size:9px; letter-spacing:.15em; text-transform:uppercase; }
+        body.theme-light#appBody { background:radial-gradient(ellipse at 12% 0%,#d7f3f5,transparent 38%),#eef4f8!important; color:#14283a!important; }
+        body.theme-light#appBody > div.w-full.max-w-md { background:#f7fbfd!important; border-color:#d7e4eb!important; }
+        body.theme-light#appBody header { background:linear-gradient(110deg,#e2f7f6,#e5edff)!important; color:#14283a!important; border-color:#d5e4ea; }
+        body.theme-light#appBody header h1, body.theme-light#appBody header button { color:#14283a!important; }
+        body.theme-light#appBody #tvHero { background:linear-gradient(100deg,#f1fbfb,#eef3ff); }
+        body.theme-light#appBody #tvHero h2 { color:#14283a; }
+        body.theme-light#appBody #tvHero p { color:#4d687a; }
+        body.theme-light#appBody .glass-card { background:linear-gradient(145deg,#fff,#f3f8fb)!important; border-color:#dbe7ed!important; color:#183044!important; }
+        body.theme-light#appBody .glass-card h2, body.theme-light#appBody .glass-card h3, body.theme-light#appBody .glass-card h4 { color:#183044!important; }
+        body.theme-light#appBody select, body.theme-light#appBody input:not([type=file]), body.theme-light#appBody textarea { background:#fff!important; color:#183044!important; border-color:#c8d9e3!important; }
+        body.theme-emerald#appBody > div.w-full.max-w-md { background:#031b19!important; }
+        body.theme-emerald#appBody #tvHero { background:linear-gradient(100deg,#063b35,#082b35); }
+        body.theme-indigo#appBody > div.w-full.max-w-md { background:#11132e!important; }
+        body.theme-indigo#appBody #tvHero { background:linear-gradient(100deg,#23265c,#172f52); }
+        @media(max-width:720px) {
+          body#appBody { padding:0!important; }
+          body#appBody > div.w-full.max-w-md { width:100%!important; max-width:none!important; min-height:100vh; border-radius:0!important; border-left:0!important; border-right:0!important; margin:0!important; }
+          body#appBody header { padding:18px 17px!important; }
+          body#appBody header > div:first-child { flex:1 1 100%; }
+          body#appBody header > div:last-child { justify-content:flex-start!important; }
+          body#appBody #appTab, body#appBody #savedTab { padding:16px!important; }
+          body#appBody #screen1 { grid-template-columns:1fr; gap:14px; }
+          body#appBody #screen1 > .glass-card { padding:19px!important; }
+          body#appBody #screen2 > .glass-card, body#appBody #screen3 > .glass-card { padding:20px!important; }
+          #tvHero { padding:22px 19px; }
+          #tvHero .tv-rail-visual { display:none; }
+          body#appBody .glass-card { border-radius:19px!important; }
+        }
+        @media(prefers-reduced-motion:reduce) { body#appBody *, #tvHero * { transition:none!important; animation:none!important; scroll-behavior:auto!important; } }
+
+    </style>
+</head>
+<body id="appBody" class="bg-slate-950 text-slate-100 font-sans min-h-screen pb-12 flex justify-center items-center">
+
+    <!-- SPLASH SCREEN -->
+    <div id="splashScreen" class="fixed inset-0 bg-indigo-950 z-50 flex flex-col items-center justify-center transition-opacity duration-700">
+        <div class="bg-white/10 p-8 rounded-3xl backdrop-blur-md border border-white/20 shadow-2xl text-center animate-pulse max-w-sm">
+            <span class="text-6xl">🚆</span>
+            <h1 class="text-3xl font-black text-white mt-3 tracking-wide">TransitVision</h1>
+            <p class="text-xs text-indigo-300 mt-1 uppercase tracking-widest">Navi Mumbai Trans-Harbour Network</p>
+        </div>
+        <p class="text-xs text-indigo-400 mt-6 animate-bounce">Loading Indoor Layout Engine...</p>
+    </div>
+
+    <!-- PASSENGER ACCOUNT MODAL -->
+    <div id="authModal" class="fixed inset-0 bg-black/75 z-[60] hidden items-center justify-center p-4">
+        <div class="glass-card w-full max-w-sm p-6 rounded-3xl space-y-4 border border-indigo-500/30">
+            <div class="flex justify-between items-start gap-3">
+                <div>
+                    <p class="text-[10px] uppercase tracking-widest text-indigo-300 font-bold">Passenger account</p>
+                    <h2 id="authTitle" class="text-lg font-black text-white mt-1">Sign in to TransitVision</h2>
+                    <p id="authSubtitle" class="text-xs text-slate-400 mt-1">Save your routes and keep your own search history.</p>
+                </div>
+                <button onclick="closeAuthModal()" aria-label="Close account dialog" class="text-slate-400 hover:text-white font-bold">✕</button>
+            </div>
+            <div id="signedInPanel" class="hidden space-y-3">
+                <div class="bg-slate-900/70 rounded-2xl p-4">
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider">Signed in as</p>
+                    <p id="signedInName" class="font-bold text-white mt-1"></p>
+                    <p id="signedInEmail" class="text-xs text-slate-400 mt-1 break-all"></p>
+                    <p id="sessionExpiryText" class="text-[10px] text-emerald-300 mt-2"></p>
+                </div>
+                <button onclick="logoutPassenger()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl text-xs">Sign out</button>
+            </div>
+            <form id="authForm" class="space-y-3" onsubmit="submitAuthForm(event)">
+                <div id="authNameWrap" class="hidden">
+                    <label for="authName" class="block text-xs text-slate-300 mb-1">Your name</label>
+                    <input id="authName" name="name" autocomplete="name" maxlength="80" class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter your name">
+                </div>
+                <div>
+                    <label for="authEmail" class="block text-xs text-slate-300 mb-1">Email address</label>
+                    <input id="authEmail" name="email" type="email" required autocomplete="email" maxlength="254" class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label for="authPassword" class="block text-xs text-slate-300 mb-1">Password</label>
+                    <input id="authPassword" name="password" type="password" required minlength="8" maxlength="128" autocomplete="current-password" class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="At least 8 characters">
+                </div>
+                <p id="authError" role="alert" class="hidden text-xs text-rose-300 bg-rose-950/40 border border-rose-800/50 p-3 rounded-xl"></p>
+                <button id="authSubmitBtn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs">Sign in</button>
+            </form>
+            <div id="authToggleWrap" class="text-center text-xs text-slate-400">
+                New to TransitVision? <button id="authToggleBtn" onclick="toggleAuthMode()" class="text-indigo-300 font-bold hover:underline">Create an account</button>
+            </div>
+            <button id="guestContinueBtn" onclick="closeAuthModal()" class="w-full border border-slate-700 hover:bg-slate-800 text-slate-300 font-semibold py-2.5 rounded-xl text-xs">Continue browsing as guest</button>
+            <p class="text-[10px] leading-relaxed text-slate-500">Guests can browse station information. Saved routes and server-side search history are available only after signing in.</p>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-sm p-6 rounded-3xl space-y-5 border border-indigo-500/30">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-white lang-txt" data-en="⚙️ App Settings" data-hi="⚙️ Settings">⚙️ App Settings</h3>
+                <button onclick="toggleSettings()" class="text-slate-400 hover:text-white font-bold text-sm lang-txt" data-en="✕ Close" data-hi="✕ Band Karein">✕ Close</button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- Hinglish Toggle -->
+                <div class="flex justify-between items-center bg-slate-800/60 p-3 rounded-2xl border border-slate-700">
+                    <span class="font-semibold text-slate-200 lang-txt" data-en="Hinglish Language Mode" data-hi="Hinglish Bhasha Mode">Hinglish Language Mode</span>
+                    <button onclick="toggleLanguage()" id="langBtn" class="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl transition">OFF</button>
+                </div>
+
+                <!-- Text Enlarger -->
+                <div class="flex justify-between items-center bg-slate-800/60 p-3 rounded-2xl border border-slate-700">
+                    <span class="font-semibold text-slate-200 lang-txt" data-en="Text Size Scaler" data-hi="Text Size Bada Karein">Text Size Scaler</span>
+                    <button onclick="cycleFontSize()" id="fontBtn" class="bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-xl transition">Normal</button>
+                </div>
+
+                <!-- Theme Switcher -->
+                <div class="flex justify-between items-center bg-slate-800/60 p-3 rounded-2xl border border-slate-700">
+                    <span class="font-semibold text-slate-200 lang-txt" data-en="Color Theme Mode" data-hi="Color Theme">Color Theme Mode</span>
+                    <button onclick="cycleTheme()" id="themeBtn" class="bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-xl transition">🌙 Dark Slate</button>
+                </div>
+            </div>
+
+            <button onclick="toggleSettings()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition lang-txt" data-en="Save & Return" data-hi="Save karke Wapas Jayein">
+                Save & Return
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div class="w-full max-w-md bg-slate-900 shadow-2xl rounded-3xl overflow-hidden my-4 border border-slate-800 relative">
+        
+        <!-- App Header -->
+        <header class="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 p-5 text-white flex flex-wrap gap-3 justify-between items-center shadow-md">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">🚉</span>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight">TransitVision</h1>
+                    <p class="text-[10px] text-indigo-200">Smart Station & Ticket Guide</p>
+                </div>
+            </div>
+            <div class="flex gap-1 items-center flex-wrap justify-end">
+                <button onclick="showTab('app')" id="tabAppBtn" class="bg-white/20 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition lang-txt" data-en="App" data-hi="App">App</button>
+                <button onclick="showTab('saved')" id="tabSavedBtn" class="bg-black/20 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition lang-txt" data-en="Saved" data-hi="Saved Routes">Saved</button>
+                <button onclick="openAuthModal()" id="accountBtn" class="bg-black/30 hover:bg-black/50 text-white px-2.5 py-2 rounded-xl text-[11px] font-bold transition">Sign in</button>
+                <button onclick="toggleSettings()" aria-label="App settings" class="bg-black/30 hover:bg-black/50 text-white p-2 rounded-xl text-xs transition">⚙️</button>
+            </div>
+        </header>
+    <section id="tvHero" aria-label="TransitVision introduction">
+      <div class="tv-hero-copy">
+        <div class="tv-eyebrow lang-txt" data-en="SMART STATION COMPANION" data-hi="SMART STATION SAATHI">SMART STATION COMPANION</div>
+        <h2 class="lang-txt" data-en="Your station. Your next step." data-hi="Aapka station. Aapka agla kadam.">Your station. Your next step.</h2>
+        <p class="lang-txt" data-en="Choose your journey, pick a platform, and open only the guidance you need — one step at a time." data-hi="Apna route chunein, platform select karein aur zaroori guidance ek-ek step mein dekhein.">Choose your journey, pick a platform, and open only the guidance you need — one step at a time.</p>
+      </div>
+      <div class="tv-rail-visual" aria-hidden="true"><div class="tv-rail-line"></div><span class="tv-stop"></span><span class="tv-stop"></span><span class="tv-stop"></span><span class="tv-route-label lang-txt" data-en="PLAN · SELECT · GO" data-hi="PLAN · CHUNEIN · CHALEIN">PLAN · SELECT · GO</span></div>
+    </section>
+
+
+        <!-- MAIN INTERACTION SECTION -->
+        <div id="appTab" class="p-5 space-y-6">
+
+            <!-- SCREEN 1: TICKET OCR & STATION SELECTION -->
+            <div id="screen1" class="space-y-5">
+                
+                <div class="glass-card p-5 rounded-3xl border border-indigo-500/30 space-y-4">
+                    <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-indigo-500/30 lang-txt" data-en="Step 1 of 4" data-hi="Step 1 / 4">Step 1 of 4</span>
+                    <h2 class="text-base font-bold text-white lang-txt" data-en="Input Ticket Information" data-hi="Ticket Info Input Karein">Input Ticket Information</h2>
+                    <p class="text-xs text-slate-400 lang-txt" data-en="Choose how you want to provide your ticket details:" data-hi="Apna ticket detail dene ka tareeka chunein:">Choose how you want to provide your ticket details:</p>
+                    
+                    <div id="previewContainer" class="hidden bg-slate-950 p-3 rounded-2xl border border-indigo-500/30 text-center">
+                        <p id="fileNameText" class="text-xs text-emerald-400 font-semibold">✓ File selected successfully</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-3 px-3 rounded-xl cursor-pointer transition shadow flex flex-col items-center justify-center gap-1 text-center">
+                            <span class="text-lg">📷</span>
+                            <span class="lang-txt" data-en="Live Camera Scan" data-hi="Live Camera Scan">Live Camera Scan</span>
+                            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+                        </label>
+
+                        <label class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-bold py-3 px-3 rounded-xl cursor-pointer transition shadow flex flex-col items-center justify-center gap-1 text-center">
+                            <span class="text-lg">🖼️</span>
+                            <span class="lang-txt" data-en="Choose from Gallery" data-hi="Gallery se Select Karein">Choose from Gallery</span>
+                            <input type="file" id="galleryInput" accept="image/*" class="hidden">
+                        </label>
+                    </div>
+
+                    <p id="ocrStatus" aria-live="polite" class="text-[11px] text-indigo-300 text-center pt-1" data-dyn-en="Ready to process image..." data-dyn-hi="Image process karne ke liye taiyar...">Ready to process image...</p>
+                    <details id="ocrDebugPanel" class="hidden mt-2 rounded-xl border border-slate-700 bg-slate-950/80 p-3 text-left">
+                        <summary class="cursor-pointer text-xs font-semibold text-slate-300 lang-txt" data-en="View text detected by OCR" data-hi="OCR se mila text dekhein">View text detected by OCR</summary>
+                        <pre id="ocrDetectedText" class="mt-2 whitespace-pre-wrap break-words text-[11px] leading-relaxed text-slate-300"></pre>
+                    </details>
+                </div>
+
+                <div class="glass-card p-5 rounded-3xl space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">⌨️</span>
+                        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider lang-txt" data-en="Or Select Stations Manually" data-hi="Ya Phir Manually Select Karein">Or Select Stations Manually</h3>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-emerald-400 font-semibold mb-1 lang-txt" data-en="🟢 Source (Boarding Station)" data-hi="🟢 Source (Jahan se Train Pakadni Hai)">🟢 Source (Boarding Station)</label>
+                        <select id="sourceStation" class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="">-- Choose Source Station --</option>
+                            <option value="AIROLI">Airoli</option>
+                            <option value="KOPARKHAIRANE">Koparkhairane</option>
+                            <option value="GHANSOLI">Ghansoli</option>
+                            <option value="TURBHE">Turbhe</option>
+                            <option value="RABALE">Rabale</option>
+                            <option value="VASHI">Vashi</option>
+                            <option value="CBD_BELAPUR">CBD Belapur</option>
+                            <option value="PANVEL">Panvel</option>
+                            <option value="KHARGHAR">Kharghar</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-rose-400 font-semibold mb-1 lang-txt" data-en="🔴 Destination (Arrival Station)" data-hi="🔴 Destination (Jahan Utarna Hai)">🔴 Destination (Arrival Station)</label>
+                        <select id="destStation" class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-rose-500">
+                            <option value="">-- Choose Destination Station --</option>
+                            <option value="AIROLI">Airoli</option>
+                            <option value="KOPARKHAIRANE">Koparkhairane</option>
+                            <option value="GHANSOLI">Ghansoli</option>
+                            <option value="TURBHE">Turbhe</option>
+                            <option value="RABALE">Rabale</option>
+                            <option value="VASHI">Vashi</option>
+                            <option value="CBD_BELAPUR">CBD Belapur</option>
+                            <option value="PANVEL">Panvel</option>
+                            <option value="KHARGHAR">Kharghar</option>
+                        </select>
+                    </div>
+
+                    <button onclick="goToScreen(2)" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg lang-txt" data-en="Continue to Navigation Choice ➔" data-hi="Aage Badhein ➔">
+                        Continue to Navigation Choice ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCREEN 2: CHOOSE WHICH STATION NAVIGATION IS NEEDED -->
+            <div id="screen2" class="hidden space-y-5">
+                <div class="glass-card p-5 rounded-3xl space-y-4">
+                    <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-indigo-500/30 lang-txt" data-en="Step 2 of 4" data-hi="Step 2 / 4">Step 2 of 4</span>
+                    <h2 class="text-base font-bold text-white lang-txt" data-en="Which station do you need indoor layout navigation for?" data-hi="Kiski indoor navigation info chahiye?">Which station do you need indoor layout navigation for?</h2>
+                    <p class="text-xs text-slate-400 lang-txt" data-en="Select whether you need help navigating your boarding station or arrival station." data-hi="Aap boarding station ki info chahte hain ya destination ki?">Select whether you need help navigating your boarding station or arrival station.</p>
+
+                    <div class="space-y-3 pt-2">
+                        <button onclick="selectTargetStation('source')" class="w-full bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 p-4 rounded-2xl text-left transition flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-bold text-emerald-400 block lang-txt" data-en="🟢 Source Station" data-hi="🟢 Source Station">🟢 Source Station</span>
+                                <span id="sourceChoiceText" class="text-sm font-semibold text-white">--</span>
+                            </div>
+                            <span class="text-slate-400 text-xs">Select ➔</span>
+                        </button>
+
+                        <button onclick="selectTargetStation('dest')" class="w-full bg-slate-800 hover:bg-slate-700 border border-rose-500/40 p-4 rounded-2xl text-left transition flex justify-between items-center">
+                            <div>
+                                <span class="text-xs font-bold text-rose-400 block lang-txt" data-en="🔴 Destination Station" data-hi="🔴 Destination Station">🔴 Destination Station</span>
+                                <span id="destChoiceText" class="text-sm font-semibold text-white">--</span>
+                            </div>
+                            <span class="text-slate-400 text-xs">Select ➔</span>
+                        </button>
+                    </div>
+
+                    <button onclick="goToScreen(1)" class="text-xs text-slate-400 underline pt-2 block text-center lang-txt" data-en="← Back to Station Selection" data-hi="← Piche Jayein">
+                        ← Back to Station Selection
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCREEN 3: INQUIRY (PLATFORM & FEATURE QUERY) -->
+            <div id="screen3" class="hidden space-y-5">
+                <div class="glass-card p-5 rounded-3xl space-y-4">
+                    <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-indigo-500/30 lang-txt" data-en="Step 3 of 4" data-hi="Step 3 / 4">Step 3 of 4</span>
+                    <h2 id="activeStationTitle" class="text-base font-bold text-white lang-txt" data-en="Select Navigation Feature" data-hi="Navigation Feature Chunein">Select Navigation Feature</h2>
+
+                    <section id="stationOverviewCard" class="rounded-2xl border border-indigo-500/30 bg-indigo-950/30 p-4 space-y-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wide text-indigo-300" id="stationOverviewHeading">Station Overview</h3>
+                        <p id="stationOverviewText" class="text-xs leading-relaxed whitespace-pre-line text-slate-200">Select a station to see its overview.</p>
+                    </section>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1 lang-txt" data-en="Select Platform" data-hi="Platform Select Karein">Select Platform</label>
+                        <select id="platformSelect" class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-indigo-500" onchange="onPlatformChange()">
+                            <option value="">-- Choose Platform --</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1 lang-txt" data-en="What layout info do you need?" data-hi="Kaunsi jankari chahiye?">What layout info do you need?</label>
+                        <select id="featureSelect" class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">-- Select Platform First --</option>
+                        </select>
+                    </div>
+
+                    <button onclick="renderFinalNavigation()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg lang-txt" data-en="Show Step-by-Step Directions ➔" data-hi="Rasta Dekhein ➔">
+                        Show Step-by-Step Directions ➔
+                    </button>
+
+                    <button onclick="goToScreen(2)" class="text-xs text-slate-400 underline block text-center lang-txt" data-en="← Back to Station Choice" data-hi="← Piche Jayein">
+                        ← Back to Station Choice
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCREEN 4: STEP-BY-STEP DIRECTIONS -->
+            <div id="screen4" class="hidden space-y-5">
+                
+                <!-- Clean Header Card (No Images) -->
+                <div class="glass-card p-4 rounded-3xl border border-indigo-500/30 space-y-1">
+                    <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest lang-txt" data-en="Active Navigation Route" data-hi="Active Route">Active Navigation Route</span>
+                    <h3 id="visualTitle" class="text-base font-black text-white tracking-tight"></h3>
+                </div>
+
+                <!-- Step-by-Step Directions & CONTEXTUAL VOICE READER -->
+                <div class="glass-card p-5 rounded-3xl space-y-3 border border-emerald-500/30">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-emerald-400 text-xs flex items-center gap-1.5 lang-txt" data-en="🗺️ Actionable Navigation Steps" data-hi="🗺️ Directions Step-by-Step">
+                            <span>🗺️</span> <span>Actionable Navigation Steps</span>
+                        </h4>
+                        <div class="flex gap-2">
+                            <button onclick="toggleSpeech()" id="voiceBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1 rounded-xl transition shadow flex items-center gap-1 lang-txt" data-en="🔊 Read Aloud" data-hi="🔊 Suno">
+                                🔊 Read Aloud
+                            </button>
+                            <button onclick="saveCurrentJourney()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-3 py-1 rounded-xl transition shadow lang-txt" data-en="⭐ Save" data-hi="⭐ Save">
+                                ⭐ Save
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="stepsList" class="space-y-2.5"></div>
+                </div>
+
+                <!-- Station-wide facilities are kept separate from platform-specific directions. -->
+                <details id="stationFacilities" class="glass-card rounded-2xl border border-slate-700 overflow-hidden">
+                    <summary class="cursor-pointer p-4 text-xs font-bold text-white flex items-center justify-between lang-txt" data-en="Station-wide Facilities" data-hi="Station ki Suvidhayein">
+                        <span>Station-wide Facilities</span><span class="text-slate-400">＋</span>
+                    </summary>
+                    <div class="px-3 pb-3 space-y-3">
+                    <div class="glass-card p-4 rounded-2xl border border-rose-500/30 space-y-2 text-xs">
+                        <div class="flex justify-between items-center">
+                            <div class="font-bold text-rose-400 flex items-center gap-1.5 lang-txt" data-en="🚓 Railway Police Outpost" data-hi="🚓 Railway Police Help Desk">
+                                <span>🚓</span> <span>Railway Police Outpost</span>
+                            </div>
+                            <a id="policeMapLink" href="#" target="_blank" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-rose-500/30 transition lang-txt" data-en="📍 Open Map" data-hi="📍 Map Dekhein">📍 Open Map</a>
+                        </div>
+                        <p id="policeInfo" class="text-slate-300 leading-relaxed text-[11px]"></p>
+                    </div>
+
+                    <div class="glass-card p-4 rounded-2xl border border-cyan-500/30 space-y-2 text-xs">
+                        <div class="flex justify-between items-center">
+                            <div class="font-bold text-cyan-400 flex items-center gap-1.5 lang-txt" data-en="💊 Nearby Chemists & Medical Stores" data-hi="💊 Paas Ke Medical Stores">
+                                <span>💊</span> <span>Nearby Chemists & Medical Stores</span>
+                            </div>
+                            <a id="medicalMapLink" href="#" target="_blank" class="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-cyan-500/30 transition lang-txt" data-en="📍 Open Map" data-hi="📍 Map Dekhein">📍 Open Map</a>
+                        </div>
+                        <p id="medicalInfo" class="text-slate-300 leading-relaxed text-[11px]"></p>
+                    </div>
+                    </div>
+                </details>
+
+                <!-- Live GPS proximity guidance (browser-only; never sent to the backend) -->
+                <div class="glass-card p-4 rounded-2xl border border-rose-500/30 space-y-3 text-xs" id="gpsProximityCard">
+                    <div class="flex justify-between items-center gap-3">
+                        <div>
+                            <h4 class="font-bold text-rose-300 lang-txt" data-en="📍 Live GPS Proximity Alarm" data-hi="📍 Live GPS Proximity Alarm">📍 Live GPS Proximity Alarm</h4>
+                            <p class="text-[10px] text-slate-400 mt-1 lang-txt" data-en="Tracks distance to your selected destination on this device." data-hi="Is device par aapke chune hue destination ki doori track karta hai.">Tracks distance to your selected destination on this device.</p>
+                        </div>
+                        <span id="gpsLiveBadge" class="text-[10px] rounded-lg px-2 py-1 bg-slate-800 text-slate-400">OFF</span>
+                    </div>
+                    <p id="gpsStatus" aria-live="polite" class="text-slate-300 text-[11px] leading-relaxed" data-dyn-en="GPS is off. Select a destination, then activate GPS to check distance and receive a proximity alarm within 2 km." data-dyn-hi="GPS band hai. Destination chunein, phir GPS chalu karke doori dekhein aur 2 km ke andar proximity alarm paayein.">GPS is off. Select a destination, then activate GPS to check distance and receive a proximity alarm within 2 km.</p>
+                    <div class="flex gap-2">
+                        <button id="startGPSButton" onclick="startGPSAlarm()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-3 py-2 rounded-xl transition lang-txt" data-en="Activate GPS" data-hi="GPS Chalu Karein">Activate GPS</button>
+                        <button id="stopGPSButton" onclick="stopGPSAlarm()" disabled class="bg-slate-800 text-slate-500 text-[11px] font-bold px-3 py-2 rounded-xl transition disabled:opacity-50 lang-txt" data-en="Stop" data-hi="Rokein">Stop</button>
+                    </div>
+                    <p class="text-[10px] text-slate-500 lang-txt" data-en="Location permission is requested only after you activate GPS. Your live location stays in your browser and is not saved to your account." data-hi="Location permission GPS chalu karne ke baad hi maangi jaati hai. Aapki live location browser mein hi rehti hai aur account mein save nahi hoti.">Location permission is requested only after you activate GPS. Your live location stays in your browser and is not saved to your account.</p>
+                </div>
+
+                <button onclick="goToScreen(1)" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl text-xs transition text-center lang-txt" data-en="🔄 Start New Search" data-hi="🔄 Nayi Search Shuru Karein">
+                    🔄 Start New Search
+                </button>
+            </div>
+
+        </div>
+
+        <!-- SAVED & HISTORY TAB -->
+        <div id="savedTab" class="hidden p-5 space-y-5">
+            <div id="personalDashboard" class="glass-card p-5 rounded-3xl space-y-3">
+                <p class="text-xs text-slate-400">Your personalized passenger dashboard will appear here after sign in.</p>
+            </div>
+            <div class="glass-card p-5 rounded-3xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider lang-txt" data-en="⭐ Saved Preferred Routes" data-hi="⭐ Saved Routes">⭐ Saved Preferred Routes</h3>
+                    <button onclick="clearSavedJourneys()" class="text-xs text-rose-400 hover:underline lang-txt" data-en="Clear" data-hi="Hatao">Clear</button>
+                </div>
+                <div id="savedListContainer" class="space-y-2"></div>
+            </div>
+
+            <div class="glass-card p-5 rounded-3xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider lang-txt" data-en="🕒 Past Search History" data-hi="🕒 Purani Search History">🕒 Past Search History</h3>
+                    <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline lang-txt" data-en="Clear" data-hi="Hatao">Clear</button>
+                </div>
+                <div id="historyListContainer" class="space-y-2"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- COMPLETE DATABASE & JS ENGINE -->
+    <script>
+        setTimeout(() => {
+            const splash = document.getElementById('splashScreen');
+            splash.style.opacity = '0';
+            setTimeout(() => splash.remove(), 700);
+        }, 2000);
+
+        const BUILT_IN_STATION_DB = {"airoli":{"name":"Airoli Railway Station","overview":"\n\nPlatform directions\nPlatform 1: Trains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2: Trains heading North towards Thane.","directions":[{"platform":"Platform 1","direction":"Trains heading South towards Vashi, Nerul, and Panvel."},{"platform":"Platform 2","direction":"Trains heading North towards Thane."}],"platforms":{"platform 1":[{"title":"platform 1 to platform 2","steps":["There are two wide pedestrian subways located closer to the center and the ends of the platforms. Walk down the ramp/stairs, pass under the tracks, and take the opposite stairs up to reach Platform 2."]},{"title":"Ticket Counters & ATVMs","steps":["West Side (Main Entry): Walk along Platform 1 toward the central main concourse exit. The primary UTS Booking Office and Automated Ticket Vending Machines (ATVMs) are located right inside this main concourse hall before you step out.","East Side: While there is a smaller ticketing office structure on the East side (Thane–Belapur Highway side), it is often non-functional or closed during off-peak hours. It is highly recommended to use the UTS app or stick to the West-side counters"]},{"title":"Main Station Exit & Auto Stand","steps":["Walk directly off the side of Platform 1 into the main concourse to find the West Exit facing Sector 3 / Airoli residential area.","Once you step out of the station gate, the primary Auto-Rickshaw Stand is located right at the entrance. You will easily find both regular meters and share-autos heading toward different sectors of Airoli or nearby corporate hubs.","If you exit via the FOB toward the East Side, you will come out onto the busy Thane–Belapur Road, which directly faces the Mindspace IT Park corridor."]},{"title":"Bus Stand (NMMT Depot)","steps":["Exit via the main West Side gate past the auto stand.","Walk straight for about 1–2 minutes along the main road (Rajrishi Shahu Maharaj Marg), and you will find the Airoli Bus Depot. From here, frequent NMMT and BEST buses connect to Thane, Mulund, Vashi, and Borivali."]},{"title":"Food & Basic Amenities","steps":["Inside the Station: Small tea/coffee kiosks and quick snack stalls are scattered along Platform 1 and inside the main concourse area.","Outside the Station: For a wider variety of food, step out of the West Exit. The street outside is packed with local food stalls, juice centres, breakfast/snack counters (serving Vada Pav, Misal, Poha), and small restaurants catering to the massive daily office crowd.","Restrooms & Drinking Water: Water taps and public restrooms are located near the central part of the platform, close to the subway/FOB entry points."]}],"platform 2":[{"title":"platform 2 to platform 1","steps":["Look for the underground commuter subways located near the center and ends of the platform. Walk down the ramp, walk through the short tunnel under the tracks, and take the stairs up directly onto Platform 1."]},{"title":"Ticket Counters & ATVMs","steps":["On Platform 2 / East Side: There is a booking office on this side, but the windows are frequently closed or unstaffed outside of peak morning rush hours. There are ATVM machines near the FOB base, but they can be finicky.","Best Bet: Cross over the subway to the Platform 1 main concourse. The primary, fully-staffed UTS Booking Office is located there."]},{"title":"Main Exits: Mindspace vs. Sector 3 Residential","steps":["To Mindspace IT Park & Highway (East Exit): Walk straight off the back of Platform 2 or take the stairs up the FOB and head East. This leads you out directly toward the Thane–Belapur Road and the Mindspace IT Park skywalk/entry gates.","To Airoli Residential & Bus Depot (West Exit): Take the underground subway or the FOB across to Platform 1. Walk through the main ground-floor concourse to exit into Sector 3."]},{"title":"Auto Stand & Transport","steps":["For Mindspace / Rabale / Mahape: Exit directly from Platform 2 to the East Side (Highway). You will find auto-rickshaws lined up along the service road, including share-autos heading toward the IT parks.","For Airoli Sectors 1–20 / Mulund: Cross over to the West Exit (Platform 1 side). The auto stand there is much larger, more organized, and better for getting deep into the residential sectors of Airoli."]},{"title":"Bus Stand (NMMT)","steps":["Do not look for the bus depot on the highway side. Cross the subway to Platform 1, exit the main gate, and walk straight for 2 minutes to reach the Airoli Bus Depot for local NMMT buses."]},{"title":"Food, Snacks & Water","steps":["On the Platform: Platform 2 has standard rail snack kiosks selling packed biscuits, chips, lime juice, and tea.","For a Proper Meal: Cross over to the West Exit (Platform 1). The street immediately outside the West Gate is a massive food hub lined with Udipi restaurants, juice centers, and street food stalls (Vada Pav, Frankie, Misal Pav)."]}]},"police":"Airoli Station does not house a full-scale standalone Government Railway Police (GRP) or Railway Protection Force (RPF) station inside the terminal premises. For minor local issues, minor railway police outposts or station master assistance can be found right next to the Main Concourse Booking Office on the West Side (Platform 1).\nIf you need to report major railway-related grievances or register a formal GRP complaint, the jurisdiction falls under the Rabale Police Station or the Rabale (MIDC) Police Station, which are located a short distance away along the Thane–Belapur Road corridor.","medical":"You do not need to walk far for medicines, as multiple medical stores are situated right outside the station exits:\n• Right Outside the Station (West Exit - Sector 3): If you step directly out of the Platform 1 main exit towards the market side, you will find options like Jayshree Medical Store (located at Shop No. 5 right by the railway station) and Sai Genericos, which sits just opposite the station structure behind Hotel Sai Prakash.\nBranded & Generic Options Nearby: Walking just a minute further into the Sector 3 market road will bring you to Zeelab Pharmacy and Shree Samarth Krupa Medical, which are highly reliable for generic and branded supplies.","policeHi":"Airoli Station does not house a full-scale standalone Government Railway Police (GRP) or Railway Protection Force (RPF) station inside the terminal premises. For minor local issues, minor railway police outposts or station master assistance can be found right next to the Main Concourse Booking Office on the West Side (Platform 1).\nIf you need to report major railway-related grievances or register a formal GRP complaint, the jurisdiction falls under the Rabale Police Station or the Rabale (MIDC) Police Station, which are located a short distance away along the Thane–Belapur Road corridor.","medicalHi":"You do not need to walk far for medicines, as multiple medical stores are situated right outside the station exits:\n• Right Outside the Station (West Exit - Sector 3): If you step directly out of the Platform 1 main exit towards the market side, you will find options like Jayshree Medical Store (located at Shop No. 5 right by the railway station) and Sai Genericos, which sits just opposite the station structure behind Hotel Sai Prakash.\nBranded & Generic Options Nearby: Walking just a minute further into the Sector 3 market road will bring you to Zeelab Pharmacy and Shree Samarth Krupa Medical, which are highly reliable for generic and branded supplies.","overviewHi":"\n\nPlatform directions\nPlatform 1: Trains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2: Trains heading North towards Thane.","sourceText":"Platform\tDirection & Terminus Catered\nPlatform 1\tTrains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2\tTrains heading North towards Thane.\n \n\nplatform 1\n\n1. platform 1 to platform 2\nThere are two wide pedestrian subways located closer to the center and the ends of the platforms. Walk down the ramp/stairs, pass under the tracks, and take the opposite stairs up to reach Platform 2.\n2.Ticket Counters & ATVMs\n• West Side (Main Entry): Walk along Platform 1 toward the central main concourse exit. The primary UTS Booking Office and Automated Ticket Vending Machines (ATVMs) are located right inside this main concourse hall before you step out.\n• East Side: While there is a smaller ticketing office structure on the East side (Thane–Belapur Highway side), it is often non-functional or closed during off-peak hours. It is highly recommended to use the UTS app or stick to the West-side counters\n3.Main Station Exit & Auto Stand\n• Walk directly off the side of Platform 1 into the main concourse to find the West Exit facing Sector 3 / Airoli residential area.\n• Once you step out of the station gate, the primary Auto-Rickshaw Stand is located right at the entrance. You will easily find both regular meters and share-autos heading toward different sectors of Airoli or nearby corporate hubs.\n• If you exit via the FOB toward the East Side, you will come out onto the busy Thane–Belapur Road, which directly faces the Mindspace IT Park corridor.\n4.Bus Stand (NMMT Depot)\n• Exit via the main West Side gate past the auto stand.\n• Walk straight for about 1–2 minutes along the main road (Rajrishi Shahu Maharaj Marg), and you will find the Airoli Bus Depot. From here, frequent NMMT and BEST buses connect to Thane, Mulund, Vashi, and Borivali.\n5.Food & Basic Amenities\n• Inside the Station: Small tea/coffee kiosks and quick snack stalls are scattered along Platform 1 and inside the main concourse area.\n• Outside the Station: For a wider variety of food, step out of the West Exit. The street outside is packed with local food stalls, juice centres, breakfast/snack counters (serving Vada Pav, Misal, Poha), and small restaurants catering to the massive daily office crowd.\n• Restrooms & Drinking Water: Water taps and public restrooms are located near the central part of the platform, close to the subway/FOB entry points.\n\nplatform 2\n\n1.platform 2 to platform 1\nLook for the underground commuter subways located near the center and ends of the platform. Walk down the ramp, walk through the short tunnel under the tracks, and take the stairs up directly onto Platform 1.\n2.Ticket Counters & ATVMs\n• On Platform 2 / East Side: There is a booking office on this side, but the windows are frequently closed or unstaffed outside of peak morning rush hours. There are ATVM machines near the FOB base, but they can be finicky.\n• Best Bet: Cross over the subway to the Platform 1 main concourse. The primary, fully-staffed UTS Booking Office is located there.\n3.Main Exits: Mindspace vs. Sector 3 Residential\n• To Mindspace IT Park & Highway (East Exit): Walk straight off the back of Platform 2 or take the stairs up the FOB and head East. This leads you out directly toward the Thane–Belapur Road and the Mindspace IT Park skywalk/entry gates.\n• To Airoli Residential & Bus Depot (West Exit): Take the underground subway or the FOB across to Platform 1. Walk through the main ground-floor concourse to exit into Sector 3.\n4.Auto Stand & Transport\n• For Mindspace / Rabale / Mahape: Exit directly from Platform 2 to the East Side (Highway). You will find auto-rickshaws lined up along the service road, including share-autos heading toward the IT parks.\n• For Airoli Sectors 1–20 / Mulund: Cross over to the West Exit (Platform 1 side). The auto stand there is much larger, more organized, and better for getting deep into the residential sectors of Airoli.\n5.Bus Stand (NMMT)\n• Do not look for the bus depot on the highway side. Cross the subway to Platform 1, exit the main gate, and walk straight for 2 minutes to reach the Airoli Bus Depot for local NMMT buses.\n6.Food, Snacks & Water\n• On the Platform: Platform 2 has standard rail snack kiosks selling packed biscuits, chips, lime juice, and tea.\n• For a Proper Meal: Cross over to the West Exit (Platform 1). The street immediately outside the West Gate is a massive food hub lined with Udipi restaurants, juice centers, and street food stalls (Vada Pav, Frankie, Misal Pav).\n\n\n🚓 Railway Police Location\n\nAiroli Station does not house a full-scale standalone Government Railway Police (GRP) or Railway Protection Force (RPF) station inside the terminal premises. For minor local issues, minor railway police outposts or station master assistance can be found right next to the Main Concourse Booking Office on the West Side (Platform 1).\nIf you need to report major railway-related grievances or register a formal GRP complaint, the jurisdiction falls under the Rabale Police Station or the Rabale (MIDC) Police Station, which are located a short distance away along the Thane–Belapur Road corridor.\n\n💊 Medical Stores & Chemists\n\nYou do not need to walk far for medicines, as multiple medical stores are situated right outside the station exits:\n• Right Outside the Station (West Exit - Sector 3): If you step directly out of the Platform 1 main exit towards the market side, you will find options like Jayshree Medical Store (located at Shop No. 5 right by the railway station) and Sai Genericos, which sits just opposite the station structure behind Hotel Sai Prakash.\nBranded & Generic Options Nearby: Walking just a minute further into the Sector 3 market road will bring you to Zeelab Pharmacy and Shree Samarth Krupa Medical, which are highly reliable for generic and branded supplies."},"koparkhairane":{"name":"Koparkhairane Railway Station","overview":"Koparkhairane Railway Station (Station Code: KPHN) features an on-ground, open-concourse architectural layout nearly identical to Airoli. It sits between Ghansoli and Turbhe on the Trans-Harbour Line, with its West Exit leading to the Koparkhairane residential node (Sector 8A) and its East Exit opening directly onto the Thane–Belapur Road and the MIDC industrial corridor.\nHere is your detailed indoor layout, safety point locations, and step-by-step navigation breakdown for Koparkhairane station:\n\nPlatform directions\nPlatform 1: Trains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2: Trains heading North towards Thane.","directions":[{"platform":"Platform 1","direction":"Trains heading South towards Vashi, Nerul, and Panvel."},{"platform":"Platform 2","direction":"Trains heading North towards Thane."}],"platforms":{"Navigation from Platform 1 (Vashi/Panvel Bound Side)":[{"title":"Changing Platforms","steps":["Walk towards the middle or ends of Platform 1 and look for the underground commuter subways. Walk down the ramp, cross under the tracks through the tunnel, and take the stairs up to reach Platform 2. Alternatively, you can use the central Foot Over Bridge (FOB)."]},{"title":"Exiting the Station (Main Town Side)","steps":["Walk straight off the platform area into the main ground-floor concourse hall on the West side. This leads you out directly into Sector 8A / Koparkhairane residential node."]},{"title":"Tickets & ATVMs","steps":["The primary, fully-staffed UTS Booking Office and Automated Ticket Vending Machines (ATVMs) are located right inside this West-side ground concourse hall before you exit."]},{"title":"Auto Stand & Transport","steps":["Once you step out of the West Exit, a major Auto-Rickshaw Stand is located right at the gates, offering share-autos and metered rides deeper into the residential sectors or towards the Koparkhairane D-Mart area."]},{"title":"Food & Snacks","steps":["Small IRCTC stall kiosks selling water, tea, and packed snacks are available along the platform. Once outside the West Exit, you enter a vibrant food street packed with local snack centers, juice corners, and Udipi-style breakfast places."]}],"Navigation from Platform 2 (Thane Bound Side)":[{"title":"Changing Platforms","steps":["Take the underground pedestrian subways or climb the central FOB to cross over safely to Platform 1."]},{"title":"Exiting the Station (Industrial / Highway Side)","steps":["Walk off the back of Platform 2 or walk East across the FOB to take the East Exit. This drops you directly onto the Thane–Belapur Road service lane, directly facing the massive MIDC Industrial Area and nearby corporate anchors like Reliance DAKC."]},{"title":"Tickets & ATVMs","steps":["While there is an auxiliary ticket window structure on the East side (Platform 2), it is often unstaffed during off-peak hours. It is highly recommended to cross the subway to Platform 1 for ticket purchases or use the UTS mobile app."]},{"title":"Auto Stand & Highway Transport","steps":["Exiting the East side places you right by the highway where autos wait to ferry commuters to corporate hubs across Mahape, Ghansoli, or Rabale."]},{"title":"Food & Snacks","steps":["Platform 2 features basic rail refreshment stalls. For multi-cuisine dining or a sit-down meal, it is better to cross over to the West side where local restaurants and cafes are located."]}]},"police":"• Inside the Station: Koparkhairane does not have a large, standalone railway police station inside the terminal. A small administrative security desk or station master cabin is available next to the Platform 1 main booking window for emergency commuter aid.\n• Outside the Station (Local Jurisdiction): For formal security issues or complaints, the local Koparkhairane Police Station is located nearby at Sector 4 / Sector 6 area.","medical":"• West Exit (Sector 8A): Step out of the main West gate to find multiple well-stocked pharmacies within a 1-to-2 minute walking radius along the station road, including Kalyani Medical Store (located directly on Station Road) and Laxmi Medical & General Store.\n• East Exit (Highway Side): If you experience a medical emergency on the highway/MIDC side, the prominent Reliance Hospital is located directly outside the East entrance area.\nAre you arriving at Koparkhairane to head towards a specific industrial tech park on the highway side, or are you looking for a residential destination deeper inside the Sectors? I can give you the most efficient exit route!","policeHi":"• Inside the Station: Koparkhairane does not have a large, standalone railway police station inside the terminal. A small administrative security desk or station master cabin is available next to the Platform 1 main booking window for emergency commuter aid.\n• Outside the Station (Local Jurisdiction): For formal security issues or complaints, the local Koparkhairane Police Station is located nearby at Sector 4 / Sector 6 area.","medicalHi":"• West Exit (Sector 8A): Step out of the main West gate to find multiple well-stocked pharmacies within a 1-to-2 minute walking radius along the station road, including Kalyani Medical Store (located directly on Station Road) and Laxmi Medical & General Store.\n• East Exit (Highway Side): If you experience a medical emergency on the highway/MIDC side, the prominent Reliance Hospital is located directly outside the East entrance area.\nAre you arriving at Koparkhairane to head towards a specific industrial tech park on the highway side, or are you looking for a residential destination deeper inside the Sectors? I can give you the most efficient exit route!","overviewHi":"Koparkhairane Railway Station (Station Code: KPHN) features an on-ground, open-concourse architectural layout nearly identical to Airoli. It sits between Ghansoli and Turbhe on the Trans-Harbour Line, with its West Exit leading to the Koparkhairane residential node (Sector 8A) and its East Exit opening directly onto the Thane–Belapur Road and the MIDC industrial corridor.\nHere is your detailed indoor layout, safety point locations, and step-by-step navigation breakdown for Koparkhairane station:\n\nPlatform directions\nPlatform 1: Trains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2: Trains heading North towards Thane.","sourceText":"Koparkhairane Railway Station (Station Code: KPHN) features an on-ground, open-concourse architectural layout nearly identical to Airoli. It sits between Ghansoli and Turbhe on the Trans-Harbour Line, with its West Exit leading to the Koparkhairane residential node (Sector 8A) and its East Exit opening directly onto the Thane–Belapur Road and the MIDC industrial corridor.\nHere is your detailed indoor layout, safety point locations, and step-by-step navigation breakdown for Koparkhairane station:\n\n🚉 Platform & Track Configuration\n\nThe station operates with a dual ground-level track and platform layout:\n\nPlatform\tDirection & Terminus Catered\nPlatform 1\tTrains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2\tTrains heading North towards Thane.\n\n\n🚶 Navigation from Platform 1 (Vashi/Panvel Bound Side)\n\n• Changing Platforms: Walk towards the middle or ends of Platform 1 and look for the underground commuter subways. Walk down the ramp, cross under the tracks through the tunnel, and take the stairs up to reach Platform 2. Alternatively, you can use the central Foot Over Bridge (FOB).\n• Exiting the Station (Main Town Side): Walk straight off the platform area into the main ground-floor concourse hall on the West side. This leads you out directly into Sector 8A / Koparkhairane residential node.\n• Tickets & ATVMs: The primary, fully-staffed UTS Booking Office and Automated Ticket Vending Machines (ATVMs) are located right inside this West-side ground concourse hall before you exit.\n• Auto Stand & Transport: Once you step out of the West Exit, a major Auto-Rickshaw Stand is located right at the gates, offering share-autos and metered rides deeper into the residential sectors or towards the Koparkhairane D-Mart area.\n• Food & Snacks: Small IRCTC stall kiosks selling water, tea, and packed snacks are available along the platform. Once outside the West Exit, you enter a vibrant food street packed with local snack centers, juice corners, and Udipi-style breakfast places.\n\n🚶 Navigation from Platform 2 (Thane Bound Side)\n\n• Changing Platforms: Take the underground pedestrian subways or climb the central FOB to cross over safely to Platform 1.\n• Exiting the Station (Industrial / Highway Side): Walk off the back of Platform 2 or walk East across the FOB to take the East Exit. This drops you directly onto the Thane–Belapur Road service lane, directly facing the massive MIDC Industrial Area and nearby corporate anchors like Reliance DAKC.\n• Tickets & ATVMs: While there is an auxiliary ticket window structure on the East side (Platform 2), it is often unstaffed during off-peak hours. It is highly recommended to cross the subway to Platform 1 for ticket purchases or use the UTS mobile app.\n• Auto Stand & Highway Transport: Exiting the East side places you right by the highway where autos wait to ferry commuters to corporate hubs across Mahape, Ghansoli, or Rabale.\n• Food & Snacks: Platform 2 features basic rail refreshment stalls. For multi-cuisine dining or a sit-down meal, it is better to cross over to the West side where local restaurants and cafes are located.\n\n🚓 Police Outpost Location\n\n• Inside the Station: Koparkhairane does not have a large, standalone railway police station inside the terminal. A small administrative security desk or station master cabin is available next to the Platform 1 main booking window for emergency commuter aid.\n• Outside the Station (Local Jurisdiction): For formal security issues or complaints, the local Koparkhairane Police Station is located nearby at Sector 4 / Sector 6 area.\n\n💊 Medical Stores & Chemists\n\n• West Exit (Sector 8A): Step out of the main West gate to find multiple well-stocked pharmacies within a 1-to-2 minute walking radius along the station road, including Kalyani Medical Store (located directly on Station Road) and Laxmi Medical & General Store.\n• East Exit (Highway Side): If you experience a medical emergency on the highway/MIDC side, the prominent Reliance Hospital is located directly outside the East entrance area.\nAre you arriving at Koparkhairane to head towards a specific industrial tech park on the highway side, or are you looking for a residential destination deeper inside the Sectors? I can give you the most efficient exit route!"},"ghansoli":{"name":"Ghansoli Railway Station","overview":"Ghansoli primarily caters to a mix of heavy residential commuter crowds and corporate employees heading to Reliance Corporate Park (RCP) or the Mastek/Millennium Business Park (MBP) area.\n\nPlatform directions\nPlatform 1 (West Side): Trains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2 (East Side): Trains heading North towards Thane.","directions":[{"platform":"Platform 1 (West Side)","direction":"Trains heading South towards Vashi, Nerul, and Panvel."},{"platform":"Platform 2 (East Side)","direction":"Trains heading North towards Thane."}],"platforms":{"Navigation from Platform 1 (Vashi/Panvel Bound Side)":[{"title":"Changing Platforms","steps":["Walk toward the middle of Platform 1 and enter the underground pedestrian subway to cross safely beneath the tracks to Platform 2. You can also use the central Foot Over Bridge (FOB)."]},{"title":"Exiting the Station (Town Side)","steps":["Walk straight off the platform directly into the main ground-floor concourse. Exit here for the Ghansoli Residential Node (Sectors 1 to 15)."]},{"title":"Tickets & ATVMs","steps":["The primary, fully-staffed UTS Booking Office and a row of touch-screen ATVM ticket machines are located inside this main West concourse hall."]},{"title":"Auto Stand & Transport","steps":["Once you exit the West gate, a massive Auto-Rickshaw Stand is right outside. This side is perfect for catching share-autos deeper into Ghansoli or toward the Ghansoli-Gothivali areas."]},{"title":"Food & Snacks","steps":["Small platform stalls sell water and packed snacks. Step outside the West exit to find local breakfast stalls (Vada Pav, Poha) and Udipi restaurants like Hotel Satkar."]}],"Navigation from Platform 2 (Thane Bound Side)":[{"title":"Changing Platforms","steps":["Take the underground subway or climb the central FOB to cross over to Platform 1."]},{"title":"Exiting the Station (Highway / Corporate Side)","steps":["Walk off the back of Platform 2 or take the East FOB stairs down. This exits directly onto the Thane–Belapur Road service lane, facing the MIDC area and Reliance Corporate Park (RCP)."]},{"title":"Tickets & ATVMs","steps":["The East-side ticket window exists but operates on erratic hours. Use the West-side main counters or the UTS mobile app."]},{"title":"Auto Stand & Highway Transport","steps":["An active auto line sits on the highway service road, perfect if you need an immediate drop to corporate hubs down the highway line."]},{"title":"Food & Snacks","steps":["Basic platform tea kiosks are active. For sit-down dining, it is recommended to cross over to the West side."]}]},"police":"• Railway Police: Emergency police assistance or railway staff desks are located adjacent to the Platform 1 main booking window. The main administrative precinct falls under the Ghansoli Police Outpost / Rabale Jurisdiction.","medical":"Step out of the West Exit to find Ghansoli Medical & General Store and Asha Medical just a short 2-minute walk down the main station road.","policeHi":"• Railway Police: Emergency police assistance or railway staff desks are located adjacent to the Platform 1 main booking window. The main administrative precinct falls under the Ghansoli Police Outpost / Rabale Jurisdiction.","medicalHi":"Step out of the West Exit to find Ghansoli Medical & General Store and Asha Medical just a short 2-minute walk down the main station road.","overviewHi":"Ghansoli primarily caters to a mix of heavy residential commuter crowds and corporate employees heading to Reliance Corporate Park (RCP) or the Mastek/Millennium Business Park (MBP) area.\n\nPlatform directions\nPlatform 1 (West Side): Trains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2 (East Side): Trains heading North towards Thane.","sourceText":"Ghansoli primarily caters to a mix of heavy residential commuter crowds and corporate employees heading to Reliance Corporate Park (RCP) or the Mastek/Millennium Business Park (MBP) area.\n\nPlatform & Track Configuration\n\n• Platform 1 (West Side): Trains heading South towards Vashi, Nerul, and Panvel.\n• Platform 2 (East Side): Trains heading North towards Thane.\n\n🚶 Navigation from Platform 1 (Vashi/Panvel Bound Side)\n\n• Changing Platforms: Walk toward the middle of Platform 1 and enter the underground pedestrian subway to cross safely beneath the tracks to Platform 2. You can also use the central Foot Over Bridge (FOB).\n• Exiting the Station (Town Side): Walk straight off the platform directly into the main ground-floor concourse. Exit here for the Ghansoli Residential Node (Sectors 1 to 15).\n• Tickets & ATVMs: The primary, fully-staffed UTS Booking Office and a row of touch-screen ATVM ticket machines are located inside this main West concourse hall.\n• Auto Stand & Transport: Once you exit the West gate, a massive Auto-Rickshaw Stand is right outside. This side is perfect for catching share-autos deeper into Ghansoli or toward the Ghansoli-Gothivali areas.\n• Food & Snacks: Small platform stalls sell water and packed snacks. Step outside the West exit to find local breakfast stalls (Vada Pav, Poha) and Udipi restaurants like Hotel Satkar.\n\n🚶 Navigation from Platform 2 (Thane Bound Side)\n\n• Changing Platforms: Take the underground subway or climb the central FOB to cross over to Platform 1.\n• Exiting the Station (Highway / Corporate Side): Walk off the back of Platform 2 or take the East FOB stairs down. This exits directly onto the Thane–Belapur Road service lane, facing the MIDC area and Reliance Corporate Park (RCP).\n• Tickets & ATVMs: The East-side ticket window exists but operates on erratic hours. Use the West-side main counters or the UTS mobile app.\n• Auto Stand & Highway Transport: An active auto line sits on the highway service road, perfect if you need an immediate drop to corporate hubs down the highway line.\n• Food & Snacks: Basic platform tea kiosks are active. For sit-down dining, it is recommended to cross over to the West side.\n\n🚓 Police Outpost & 💊 Medical Stores\n\n• Railway Police: Emergency police assistance or railway staff desks are located adjacent to the Platform 1 main booking window. The main administrative precinct falls under the Ghansoli Police Outpost / Rabale Jurisdiction.\n• Medical Stores & Chemists: Step out of the West Exit to find Ghansoli Medical & General Store and Asha Medical just a short 2-minute walk down the main station road."},"turbhe":{"name":"Turbhe Railway Station","overview":"Turbhe is a massive transit hub. Unlike the others, it serves as a crucial junction station where the Trans-Harbour line branches out, and it sits right next to the massive APMC Market and Turbhe MIDC.\n\nPlatform directions\nPlatform 1 & 2: Standard tracks catering to regular Thane – Vashi / Nerul / Panvel local trains.\nPlatform 3 & 4: Typically used for terminating trains, specialized loops, or the Nerul / Seawoods / Uran tracking routes. Always check the digital indicator overhead before boarding here.","directions":[{"platform":"Platform 1 & 2","direction":"Standard tracks catering to regular Thane – Vashi / Nerul / Panvel local trains."},{"platform":"Platform 3 & 4","direction":"Typically used for terminating trains, specialized loops, or the Nerul / Seawoods / Uran tracking routes. Always check the digital indicator overhead before boarding here."}],"platforms":{"Navigation from Platforms 1 & 3 (Vashi/Panvel/Sanpada Bound)":[{"title":"Changing Platforms","steps":["Because Turbhe is larger, use the wide central Foot Over Bridge (FOB) or the underground subway network to transition between Platforms 1, 2, 3, and 4."]},{"title":"Exiting the Station (APMC / City Side)","steps":["Head West off Platform 1 into the main ticketing concourse. This opens up toward Turbhe Naka, Sector 20, and the massive APMC Market complex (Grain/Masala market)."]},{"title":"Tickets & ATVMs","steps":["The massive main UTS Ticket Window Hall is on this West ground-level concourse. Expect longer queues here due to the market and industrial laborers."]},{"title":"Auto & Bus Transport","steps":["The West exit features an incredibly busy auto stand. If you walk 3 minutes out to the main junction, you will hit the Turbhe Naka Bus Stop, a major boarding point for buses heading towards Mumbai, Kalyan, and deep into Navi Mumbai."]},{"title":"Food & Snacks","steps":["The platform features highly active food stalls serving hot tea, samosas, and wada pavs to commuters."]}],"Navigation from Platforms 2 & 4 (Thane Bound / Terminating)":[{"title":"Changing Platforms","steps":["Use the main pedestrian subway channels or the overhead FOB to migrate over to Platforms 1 or 3."]},{"title":"Exiting the Station (MIDC / Highway Side)","steps":["Exiting East brings you right onto the highway flank. This side is primarily for entering the Turbhe MIDC Industrial Zone, the Indira Nagar sprawling zone, or accessing mega-stores like IKEA Navi Mumbai (which is just a short auto ride down the road)."]},{"title":"Tickets & Transport","steps":["It is highly recommended to cross over to the West side for ticketing needs or use your phone app. Sharing-autos are readily available on the highway side for industrial workers heading to Mahape or TTC Industrial area."]}]},"police":"• Railway Police: Due to the massive footfall, a dedicated GRP/RPF police booth or station master post is prominently positioned near the Platform 1 Main Booking Concourse.","medical":"Step out of the West Exit towards Turbhe Market to find Janata Medical Store and Balaji Medical right outside on the station approach road.","policeHi":"• Railway Police: Due to the massive footfall, a dedicated GRP/RPF police booth or station master post is prominently positioned near the Platform 1 Main Booking Concourse.","medicalHi":"Step out of the West Exit towards Turbhe Market to find Janata Medical Store and Balaji Medical right outside on the station approach road.","overviewHi":"Turbhe is a massive transit hub. Unlike the others, it serves as a crucial junction station where the Trans-Harbour line branches out, and it sits right next to the massive APMC Market and Turbhe MIDC.\n\nPlatform directions\nPlatform 1 & 2: Standard tracks catering to regular Thane – Vashi / Nerul / Panvel local trains.\nPlatform 3 & 4: Typically used for terminating trains, specialized loops, or the Nerul / Seawoods / Uran tracking routes. Always check the digital indicator overhead before boarding here.","sourceText":"Turbhe is a massive transit hub. Unlike the others, it serves as a crucial junction station where the Trans-Harbour line branches out, and it sits right next to the massive APMC Market and Turbhe MIDC.\n\nPlatform & Track Configuration\n\nTurbhe features four platforms because of its layout as a junction hub:\n• Platform 1 & 2: Standard tracks catering to regular Thane – Vashi / Nerul / Panvel local trains.\n• Platform 3 & 4: Typically used for terminating trains, specialized loops, or the Nerul / Seawoods / Uran tracking routes. Always check the digital indicator overhead before boarding here.\n\n🚶 Navigation from Platforms 1 & 3 (Vashi/Panvel/Sanpada Bound)\n\n• Changing Platforms: Because Turbhe is larger, use the wide central Foot Over Bridge (FOB) or the underground subway network to transition between Platforms 1, 2, 3, and 4.\n• Exiting the Station (APMC / City Side): Head West off Platform 1 into the main ticketing concourse. This opens up toward Turbhe Naka, Sector 20, and the massive APMC Market complex (Grain/Masala market).\n• Tickets & ATVMs: The massive main UTS Ticket Window Hall is on this West ground-level concourse. Expect longer queues here due to the market and industrial laborers.\n• Auto & Bus Transport: The West exit features an incredibly busy auto stand. If you walk 3 minutes out to the main junction, you will hit the Turbhe Naka Bus Stop, a major boarding point for buses heading towards Mumbai, Kalyan, and deep into Navi Mumbai.\n• Food & Snacks: The platform features highly active food stalls serving hot tea, samosas, and wada pavs to commuters.\n\n🚶 Navigation from Platforms 2 & 4 (Thane Bound / Terminating)\n\n• Changing Platforms: Use the main pedestrian subway channels or the overhead FOB to migrate over to Platforms 1 or 3.\n• Exiting the Station (MIDC / Highway Side): Exiting East brings you right onto the highway flank. This side is primarily for entering the Turbhe MIDC Industrial Zone, the Indira Nagar sprawling zone, or accessing mega-stores like IKEA Navi Mumbai (which is just a short auto ride down the road).\n• Tickets & Transport: It is highly recommended to cross over to the West side for ticketing needs or use your phone app. Sharing-autos are readily available on the highway side for industrial workers heading to Mahape or TTC Industrial area.\n\n🚓 Police Outpost & 💊 Medical Stores\n\n• Railway Police: Due to the massive footfall, a dedicated GRP/RPF police booth or station master post is prominently positioned near the Platform 1 Main Booking Concourse.\n• Medical Stores & Chemists: Step out of the West Exit towards Turbhe Market to find Janata Medical Store and Balaji Medical right outside on the station approach road."},"rabale":{"name":"Rabale Railway Station","overview":"\n\nPlatform directions\nPlatform 1: Trains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2: Trains heading North towards Thane.","directions":[{"platform":"Platform 1","direction":"Trains heading South towards Vashi, Nerul, and Panvel."},{"platform":"Platform 2","direction":"Trains heading North towards Thane."}],"platforms":{"platform 1":[{"title":"platform 1 to platform 2","steps":["Look for the wide pedestrian subways or the central foot overbridge (FOB). Walk down the ramp or stairs into the subway, pass under the railway lines, and use the opposite stairs/ramp to ascend straight onto Platform 2."]},{"title":"Ticket Counters & ATVMs","steps":["West Side (Gothivali/Residential Side): Walk off the center of Platform 1 into the main ground-floor booking hall. The primary, fully-staffed UTS Ticket Counter windows and a set of ATVM touchscreens are located here.","East Side (Highway Side): There is a small auxiliary booking counter on the Thane-Belapur road side exit, but it frequently runs on limited hours or remains unstaffed during off-peak windows. Relying on the West side or the UTS mobile app is best."]},{"title":"Main Station Exit & Auto Stand","steps":["Exit directly off Platform 1 through the main concourse to reach the West Exit. This opens into Sector 29 and the Gothivali residential village area.","An auto stand is situated right outside the West Exit gates, offering point-to-point drop services into the local Rabale sectors.","If you take the overhead FOB or subway toward the East Exit, you will step out onto the active service road of the Thane–Belapur Highway."]},{"title":"Bus Stand","steps":["Exit the station building via the East Exit to access the Thane–Belapur Highway service lane immediately.","Walk less than a minute to the Rabale Station Highway Bus Stop. Frequent NMMT, BEST, and ST buses pull up here, heading North towards Thane and South towards Mahape, Turbhe, and Vashi."]},{"title":"Food & Basic Amenities","steps":["Inside the Station: Basic railway refreshment stalls selling packed snacks, chips, bottled water, and hot tea/coffee are active near the subway entry points.","Outside the Station: Stepping out of the West Exit leads to local street food counters, snack hubs (serving hot Vada Pav, Samosas, Poha), and tea stalls.","Restrooms & Drinking Water: Public toilets and running municipal drinking water taps are functional near the central platform zone close to the Station Master's office."]}],"platform 2":[{"title":"platform 2 to platform 1","steps":["Locate the subterranean pedestrian walkways or the overhead FOB stairs near the center of the platform. Walk down the concrete ramp into the under-track tunnel, cross to the other side, and take the stairs up to emerge onto Platform 1."]},{"title":"Ticket Counters & ATVMs","steps":["On Platform 2 / East Side: A small bank of ATVM machines is available near the base of the highway exit staircase, but they can occasionally be out of service. For guaranteed cash/card manual bookings, it is best to cross over to the main Platform 1 booking hall."]},{"title":"Main Exits: Rabale MIDC vs. Residential Sectors","steps":["To Rabale MIDC Industrial Corridor (East Exit): Walk straight off the back of Platform 2 or use the FOB to head East. This places you directly on the Thane–Belapur Road service line, facing the sprawling corporate IT parks, chemical units, and manufacturing plants of the Rabale MIDC zone.","To Rabale Residential Sectors (West Exit): Cross under the tracks via the subway to Platform 1 and head through the main ground concourse out into the residential zones of Sector 29 / Gothivali."]},{"title":"Auto Stand & Transport","steps":["For MIDC / Corporate Parks: Step straight out of the East Exit (Platform 2). A dedicated line of share-autos operates along the highway service lane, transporting office commuters directly to Rabale MIDC sectors, electronic factories, and tech hubs.","For Residential Addresses: Cross over to the West Exit (Platform 1) for the main neighborhood auto rank."]},{"title":"Bus Stand","steps":["Do not look for the bus stand on the residential side. Walk straight out of the Platform 2 East Exit to find the highway bus stops instantly."]},{"title":"Food, Snacks & Water","steps":["On the Platform: Standard platform stalls are available, selling generic rail snacks, lime juice, biscuits, and hot beverages.","For a Proper Meal: Use the subway to cross to the West Exit (Platform 1) where local family diners, South Indian eateries, and street food setups line the market road."]}]},"police":"Rabale Station does not house an independent, full-fledged GRP or RPF police station inside its main passenger terminal. A small security help desk or railway police outpost is available near the Platform 1 Station Master’s room for immediate platform issues. For formal police cases, complaints, or major emergencies, the full-scale Rabale MIDC Police Station is located just a short distance down the main Thane–Belapur Road.","medical":"• Right Outside the West Exit: Walking into the Sector 29 residential market street reveals local pharmacies like Radhe Flavia Medical and standard chemist shops within a 2-to-3-minute walking distance.\n• Highway Corridor: Larger 24/7 pharmacies can be found attached to the private hospitals located along the main road just past the MIDC entry nodes.","policeHi":"Rabale Station does not house an independent, full-fledged GRP or RPF police station inside its main passenger terminal. A small security help desk or railway police outpost is available near the Platform 1 Station Master’s room for immediate platform issues. For formal police cases, complaints, or major emergencies, the full-scale Rabale MIDC Police Station is located just a short distance down the main Thane–Belapur Road.","medicalHi":"• Right Outside the West Exit: Walking into the Sector 29 residential market street reveals local pharmacies like Radhe Flavia Medical and standard chemist shops within a 2-to-3-minute walking distance.\n• Highway Corridor: Larger 24/7 pharmacies can be found attached to the private hospitals located along the main road just past the MIDC entry nodes.","overviewHi":"\n\nPlatform directions\nPlatform 1: Trains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2: Trains heading North towards Thane.","sourceText":"Platform\tDirection & Terminus Catered\nPlatform 1\tTrains heading South towards Vashi, Nerul, and Panvel.\nPlatform 2\tTrains heading North towards Thane.\nplatform 1\n1. platform 1 to platform 2\nLook for the wide pedestrian subways or the central foot overbridge (FOB). Walk down the ramp or stairs into the subway, pass under the railway lines, and use the opposite stairs/ramp to ascend straight onto Platform 2.\n2. Ticket Counters & ATVMs\n• West Side (Gothivali/Residential Side): Walk off the center of Platform 1 into the main ground-floor booking hall. The primary, fully-staffed UTS Ticket Counter windows and a set of ATVM touchscreens are located here.\n• East Side (Highway Side): There is a small auxiliary booking counter on the Thane-Belapur road side exit, but it frequently runs on limited hours or remains unstaffed during off-peak windows. Relying on the West side or the UTS mobile app is best.\n3. Main Station Exit & Auto Stand\n• Exit directly off Platform 1 through the main concourse to reach the West Exit. This opens into Sector 29 and the Gothivali residential village area.\n• An auto stand is situated right outside the West Exit gates, offering point-to-point drop services into the local Rabale sectors.\n• If you take the overhead FOB or subway toward the East Exit, you will step out onto the active service road of the Thane–Belapur Highway.\n4. Bus Stand\n• Exit the station building via the East Exit to access the Thane–Belapur Highway service lane immediately.\n• Walk less than a minute to the Rabale Station Highway Bus Stop. Frequent NMMT, BEST, and ST buses pull up here, heading North towards Thane and South towards Mahape, Turbhe, and Vashi.\n5. Food & Basic Amenities\n• Inside the Station: Basic railway refreshment stalls selling packed snacks, chips, bottled water, and hot tea/coffee are active near the subway entry points.\n• Outside the Station: Stepping out of the West Exit leads to local street food counters, snack hubs (serving hot Vada Pav, Samosas, Poha), and tea stalls.\n• Restrooms & Drinking Water: Public toilets and running municipal drinking water taps are functional near the central platform zone close to the Station Master's office.\nplatform 2\n1. platform 2 to platform 1\nLocate the subterranean pedestrian walkways or the overhead FOB stairs near the center of the platform. Walk down the concrete ramp into the under-track tunnel, cross to the other side, and take the stairs up to emerge onto Platform 1.\n2. Ticket Counters & ATVMs\n• On Platform 2 / East Side: A small bank of ATVM machines is available near the base of the highway exit staircase, but they can occasionally be out of service. For guaranteed cash/card manual bookings, it is best to cross over to the main Platform 1 booking hall.\n3. Main Exits: Rabale MIDC vs. Residential Sectors\n• To Rabale MIDC Industrial Corridor (East Exit): Walk straight off the back of Platform 2 or use the FOB to head East. This places you directly on the Thane–Belapur Road service line, facing the sprawling corporate IT parks, chemical units, and manufacturing plants of the Rabale MIDC zone.\n• To Rabale Residential Sectors (West Exit): Cross under the tracks via the subway to Platform 1 and head through the main ground concourse out into the residential zones of Sector 29 / Gothivali.\n4. Auto Stand & Transport\n• For MIDC / Corporate Parks: Step straight out of the East Exit (Platform 2). A dedicated line of share-autos operates along the highway service lane, transporting office commuters directly to Rabale MIDC sectors, electronic factories, and tech hubs.\n• For Residential Addresses: Cross over to the West Exit (Platform 1) for the main neighborhood auto rank.\n5. Bus Stand\n• Do not look for the bus stand on the residential side. Walk straight out of the Platform 2 East Exit to find the highway bus stops instantly.\n6. Food, Snacks & Water\n• On the Platform: Standard platform stalls are available, selling generic rail snacks, lime juice, biscuits, and hot beverages.\n• For a Proper Meal: Use the subway to cross to the West Exit (Platform 1) where local family diners, South Indian eateries, and street food setups line the market road.\n🚓 Railway Police Location\nRabale Station does not house an independent, full-fledged GRP or RPF police station inside its main passenger terminal. A small security help desk or railway police outpost is available near the Platform 1 Station Master’s room for immediate platform issues. For formal police cases, complaints, or major emergencies, the full-scale Rabale MIDC Police Station is located just a short distance down the main Thane–Belapur Road.\n💊 Medical Stores & Chemists\n• Right Outside the West Exit: Walking into the Sector 29 residential market street reveals local pharmacies like Radhe Flavia Medical and standard chemist shops within a 2-to-3-minute walking distance.\n• Highway Corridor: Larger 24/7 pharmacies can be found attached to the private hospitals located along the main road just past the MIDC entry nodes."},"vashi":{"name":"Vashi Railway Station","overview":"\n\nPlatform directions\nPlatform 1: Trains heading North towards Thane (Trans-Harbour Line).\nPlatform 2: Trains heading South towards Nerul and Panvel.\nPlatform 3: Trains heading West towards CSMT (Mumbai) / Goregaon.\nPlatform 4: Trains originating/terminating or heading West towards CSMT.","directions":[{"platform":"Platform 1","direction":"Trains heading North towards Thane (Trans-Harbour Line)."},{"platform":"Platform 2","direction":"Trains heading South towards Nerul and Panvel."},{"platform":"Platform 3","direction":"Trains heading West towards CSMT (Mumbai) / Goregaon."},{"platform":"Platform 4","direction":"Trains originating/terminating or heading West towards CSMT."}],"platforms":{"platform 1 & 2 (Trans-Harbour & Down Harbour)":[{"title":"platform 1/2 to other platforms","steps":["Use the wide central foot overbridges (FOBs) or the escalators located near the middle of the platforms. Walk up to the main station concourse level, follow the directional signs to the respective platform stairs, and walk down to reach Platforms 3 or 4."]},{"title":"Ticket Counters & ATVMs","steps":["Main Station Concourse (Upper Level): The primary UTS Booking Office and a large bank of Automated Ticket Vending Machines (ATVMs) are located on the main upper deck area before passing the ticket barrier gates.","Sector 30 / Inorbit Mall Side: Ticketing windows are available near the western wing entry point on the ground level, though using the UTS app is highly recommended during peak corporate rush hours."]},{"title":"Main Station Exit & Auto Stand","steps":["Walk up to the main concourse level and follow signs for the West Exit to step out toward Sector 30, which faces the Inorbit Mall road.","A highly organised, dedicated auto-rickshaw queue system operates right outside this exit for regular metered rides into various Vashi sectors. Share-autos heading towards Kopar Khairane and Ghansoli electronic zones are parked nearby."]},{"title":"Bus Stand (NMMT Depot)","steps":["Exit the main station building via the West Exit.","Walk straight for about 3 minutes towards the Vashi Station road intersection to reach the Sector 30 Bus Stop, or take a short auto ride to the main Vashi Bus Depot (Sector 9) for extensive NMMT and BEST services connecting to Mumbai, Thane, and Kalyan."]},{"title":"Food & Basic Amenities","steps":["Inside the Station: The upper concourse is a massive commercial plaza featuring multiple food stalls, popular fast-food chains, tea/coffee kiosks, and convenience stores.","Outside the Station: Step out to find local street food hubs, juice centers, and prominent restaurants right across the plaza.","Restrooms & Drinking Water: Public restrooms and water facilities are located on the upper concourse level near the main station administrative offices."]}],"platform 3 & 4 (Up Harbour to CSMT)":[{"title":"platform 3/4 to other platforms","steps":["Look for the central staircases or escalators leading up to the main concourse deck. Walk across the upper deck and descend the stairs marked for Platforms 1 or 2 to switch to Trans-Harbour or Panvel-bound trains."]},{"title":"Ticket Counters & ATVMs","steps":["Concourse Level: Access the fully-staffed booking windows situated on the central ticketing floor directly above the tracks. ATVMs are readily available near the smart card punch gates."]},{"title":"Main Exits: Infotech Park vs. Sector 30 Residential","steps":["To International Infotech Park (East/Upper Exit): Walk straight off the upper concourse into the connected commercial complex towers (Towers 1 & 2), housing major corporate and IT offices.","To Vashi Sectors / Plaza (West Exit): Follow the ground exit pathways out toward the open station square facing the retail markets and commercial hubs."]},{"title":"Auto Stand & Transport","steps":["For APMC Market / Turbhe: Exit towards the main plaza where a continuous line of auto-rickshaws caters to commuters heading towards the commercial wholesale market zones."]},{"title":"Bus Stand (NMMT)","steps":["Follow the West Exit pathways out to the main arterial road to board frequent local municipal buses."]},{"title":"Food, Snacks & Water","steps":["On the Platform: Well-maintained food stalls selling packed snacks, rail neef water, tea, and quick breakfast items line the platforms."]}]},"police":"Vashi Station houses a prominent, dedicated Government Railway Police (GRP) Station located on the ground floor near the station administrative building wing. A Railway Protection Force (RPF) outpost is also active near the main concourse ticketing area for immediate security assistance.","medical":"• Right Outside the Station Plaza: Noble Plus Pharmacy and Wellness Forever are located within a 2-minute walking distance outside the station building, offering 24/7 service.\n• Generic Options Nearby: Multiple chemist shops operate right across the street in Sector 30, providing quick access to both generic and branded medicines.","policeHi":"Vashi Station houses a prominent, dedicated Government Railway Police (GRP) Station located on the ground floor near the station administrative building wing. A Railway Protection Force (RPF) outpost is also active near the main concourse ticketing area for immediate security assistance.","medicalHi":"• Right Outside the Station Plaza: Noble Plus Pharmacy and Wellness Forever are located within a 2-minute walking distance outside the station building, offering 24/7 service.\n• Generic Options Nearby: Multiple chemist shops operate right across the street in Sector 30, providing quick access to both generic and branded medicines.","overviewHi":"\n\nPlatform directions\nPlatform 1: Trains heading North towards Thane (Trans-Harbour Line).\nPlatform 2: Trains heading South towards Nerul and Panvel.\nPlatform 3: Trains heading West towards CSMT (Mumbai) / Goregaon.\nPlatform 4: Trains originating/terminating or heading West towards CSMT.","sourceText":"Platform\tDirection & Terminus Catered\nPlatform 1\tTrains heading North towards Thane (Trans-Harbour Line).\nPlatform 2\tTrains heading South towards Nerul and Panvel.\nPlatform 3\tTrains heading West towards CSMT (Mumbai) / Goregaon.\nPlatform 4\tTrains originating/terminating or heading West towards CSMT.\nplatform 1 & 2 (Trans-Harbour & Down Harbour)\n1. platform 1/2 to other platforms\nUse the wide central foot overbridges (FOBs) or the escalators located near the middle of the platforms. Walk up to the main station concourse level, follow the directional signs to the respective platform stairs, and walk down to reach Platforms 3 or 4.\n2. Ticket Counters & ATVMs\n• Main Station Concourse (Upper Level): The primary UTS Booking Office and a large bank of Automated Ticket Vending Machines (ATVMs) are located on the main upper deck area before passing the ticket barrier gates.\n• Sector 30 / Inorbit Mall Side: Ticketing windows are available near the western wing entry point on the ground level, though using the UTS app is highly recommended during peak corporate rush hours.\n3. Main Station Exit & Auto Stand\n• Walk up to the main concourse level and follow signs for the West Exit to step out toward Sector 30, which faces the Inorbit Mall road.\n• A highly organised, dedicated auto-rickshaw queue system operates right outside this exit for regular metered rides into various Vashi sectors. Share-autos heading towards Kopar Khairane and Ghansoli electronic zones are parked nearby.\n4. Bus Stand (NMMT Depot)\n• Exit the main station building via the West Exit.\n• Walk straight for about 3 minutes towards the Vashi Station road intersection to reach the Sector 30 Bus Stop, or take a short auto ride to the main Vashi Bus Depot (Sector 9) for extensive NMMT and BEST services connecting to Mumbai, Thane, and Kalyan.\n5. Food & Basic Amenities\n• Inside the Station: The upper concourse is a massive commercial plaza featuring multiple food stalls, popular fast-food chains, tea/coffee kiosks, and convenience stores.\n• Outside the Station: Step out to find local street food hubs, juice centers, and prominent restaurants right across the plaza.\n• Restrooms & Drinking Water: Public restrooms and water facilities are located on the upper concourse level near the main station administrative offices.\nplatform 3 & 4 (Up Harbour to CSMT)\n1. platform 3/4 to other platforms\nLook for the central staircases or escalators leading up to the main concourse deck. Walk across the upper deck and descend the stairs marked for Platforms 1 or 2 to switch to Trans-Harbour or Panvel-bound trains.\n2. Ticket Counters & ATVMs\n• Concourse Level: Access the fully-staffed booking windows situated on the central ticketing floor directly above the tracks. ATVMs are readily available near the smart card punch gates.\n3. Main Exits: Infotech Park vs. Sector 30 Residential\n• To International Infotech Park (East/Upper Exit): Walk straight off the upper concourse into the connected commercial complex towers (Towers 1 & 2), housing major corporate and IT offices.\n• To Vashi Sectors / Plaza (West Exit): Follow the ground exit pathways out toward the open station square facing the retail markets and commercial hubs.\n4. Auto Stand & Transport\n• For APMC Market / Turbhe: Exit towards the main plaza where a continuous line of auto-rickshaws caters to commuters heading towards the commercial wholesale market zones.\n5. Bus Stand (NMMT)\n• Follow the West Exit pathways out to the main arterial road to board frequent local municipal buses.\n6. Food, Snacks & Water\n• On the Platform: Well-maintained food stalls selling packed snacks, rail neef water, tea, and quick breakfast items line the platforms.\n🚓 Railway Police Location\nVashi Station houses a prominent, dedicated Government Railway Police (GRP) Station located on the ground floor near the station administrative building wing. A Railway Protection Force (RPF) outpost is also active near the main concourse ticketing area for immediate security assistance.\n💊 Medical Stores & Chemists\n• Right Outside the Station Plaza: Noble Plus Pharmacy and Wellness Forever are located within a 2-minute walking distance outside the station building, offering 24/7 service.\n• Generic Options Nearby: Multiple chemist shops operate right across the street in Sector 30, providing quick access to both generic and branded medicines."},"cbd-belapur":{"name":"CBD Belapur Railway Station","overview":"\n\nPlatform directions\nPlatform 1: Trains heading North towards Thane / West towards CSMT.\nPlatform 2: Trains heading South towards Panvel / Uran.\nPlatform 3: Trains originating/terminating towards CSMT / Thane.\nPlatform 4: Trains originating/terminating or heading towards Panvel / Uran.","directions":[{"platform":"Platform 1","direction":"Trains heading North towards Thane / West towards CSMT."},{"platform":"Platform 2","direction":"Trains heading South towards Panvel / Uran."},{"platform":"Platform 3","direction":"Trains originating/terminating towards CSMT / Thane."},{"platform":"Platform 4","direction":"Trains originating/terminating or heading towards Panvel / Uran."}],"platforms":{"platform 1 & 2":[{"title":"platform 1 to platform 2","steps":["Use the wide central foot overbridges (FOBs) or the concrete subways connecting the lower levels. Walk up the stairs, cross over the tracks, and take the corresponding stairs down onto Platform 2."]},{"title":"Ticket Counters & ATVMs","steps":["Main Concourse (Ground Level): The primary UTS booking hall is located at the center of the main ground-floor entryway. Several ATVM machines are placed next to the pillars near the entrance gates."]},{"title":"Main Station Exit & Auto Stand","steps":["Exit via the main central gates out toward the CBD Belapur commercial sector.","A well-regulated auto stand is available immediately outside the exit gates, offering direct metered rides to Sector 15, Sector 11, and the various government office complexes nearby."]},{"title":"Bus Stand (NMMT Depot)","steps":["Walk out of the main station gates and head straight for about 2 minutes across the station forecourt plaza.","The CBD Belapur Bus Station is located right outside, providing highly frequent NMMT connections across Navi Mumbai, Uran, and Mumbai suburban areas."]},{"title":"Food & Basic Amenities","steps":["Inside the Station: A variety of rail canteens, snack stalls, and tea stalls are located along the platform length and inside the ticketing hall.","Outside the Station: The station complex itself houses various commercial food joints, and the immediate street outside is known for breakfast counters serving Poha, Idli, and Vada Pav to office goers.","Restrooms & Drinking Water: Facilities are available near the central station master’s office on the ground level."]}],"platform 3 & 4":[{"title":"platform 3/4 to other platforms","steps":["Locate the central staircases or the main overhead bridge. Walk up the stairs to navigate across the tracks and descend onto Platforms 1 or 2."]},{"title":"Ticket Counters & ATVMs","steps":["Platform Concourse: Basic ticket windows are located near the eastern access points, though the main ground hall on the western side remains the most reliable for manual booking."]},{"title":"Main Exits: Sakal Bhavan vs. Sector 15","steps":["To Sakal Bhavan / CGO Complex (North Exit): Walk out toward the major government office complexes and administrative buildings.","To Belapur Sector 15 / Artist Village (South Exit): Leads out towards the residential areas and the scenic creek-side developments."]},{"title":"Auto Stand & Transport","steps":["Share-autos and regular autos are easily available at both exits, with a heavy concentration of vehicles waiting near the commercial towers during evening rush hours."]},{"title":"Bus Stand (NMMT)","steps":["Use the main front exit to access the bus ranks directly."]},{"title":"Food, Snacks & Water","steps":["On the Platform: Standard IRCTC-approved food stalls are available on both platforms offering refreshments, packaged snacks, and cold beverages."]}]},"police":"A dedicated GRP and RPF Outpost is located on the ground floor of the station building, situated right next to the Station Master’s Office near the main booking hall.","medical":"• Station Commercial Complex: Small pharmacy counters are situated inside the extended station building wings.\n• Outside the Gates: Apollo Pharmacy and local chemist shops are located a short 3-minute walk away near the Sakal Bhavan road junction.","policeHi":"A dedicated GRP and RPF Outpost is located on the ground floor of the station building, situated right next to the Station Master’s Office near the main booking hall.","medicalHi":"• Station Commercial Complex: Small pharmacy counters are situated inside the extended station building wings.\n• Outside the Gates: Apollo Pharmacy and local chemist shops are located a short 3-minute walk away near the Sakal Bhavan road junction.","overviewHi":"\n\nPlatform directions\nPlatform 1: Trains heading North towards Thane / West towards CSMT.\nPlatform 2: Trains heading South towards Panvel / Uran.\nPlatform 3: Trains originating/terminating towards CSMT / Thane.\nPlatform 4: Trains originating/terminating or heading towards Panvel / Uran.","sourceText":"Platform\tDirection & Terminus Catered\nPlatform 1\tTrains heading North towards Thane / West towards CSMT.\nPlatform 2\tTrains heading South towards Panvel / Uran.\nPlatform 3\tTrains originating/terminating towards CSMT / Thane.\nPlatform 4\tTrains originating/terminating or heading towards Panvel / Uran.\nplatform 1 & 2\n1. platform 1 to platform 2\nUse the wide central foot overbridges (FOBs) or the concrete subways connecting the lower levels. Walk up the stairs, cross over the tracks, and take the corresponding stairs down onto Platform 2.\n2. Ticket Counters & ATVMs\n• Main Concourse (Ground Level): The primary UTS booking hall is located at the center of the main ground-floor entryway. Several ATVM machines are placed next to the pillars near the entrance gates.\n3. Main Station Exit & Auto Stand\n• Exit via the main central gates out toward the CBD Belapur commercial sector.\n• A well-regulated auto stand is available immediately outside the exit gates, offering direct metered rides to Sector 15, Sector 11, and the various government office complexes nearby.\n4. Bus Stand (NMMT Depot)\n• Walk out of the main station gates and head straight for about 2 minutes across the station forecourt plaza.\n• The CBD Belapur Bus Station is located right outside, providing highly frequent NMMT connections across Navi Mumbai, Uran, and Mumbai suburban areas.\n5. Food & Basic Amenities\n• Inside the Station: A variety of rail canteens, snack stalls, and tea stalls are located along the platform length and inside the ticketing hall.\n• Outside the Station: The station complex itself houses various commercial food joints, and the immediate street outside is known for breakfast counters serving Poha, Idli, and Vada Pav to office goers.\n• Restrooms & Drinking Water: Facilities are available near the central station master’s office on the ground level.\nplatform 3 & 4\n1. platform 3/4 to other platforms\nLocate the central staircases or the main overhead bridge. Walk up the stairs to navigate across the tracks and descend onto Platforms 1 or 2.\n2. Ticket Counters & ATVMs\n• Platform Concourse: Basic ticket windows are located near the eastern access points, though the main ground hall on the western side remains the most reliable for manual booking.\n3. Main Exits: Sakal Bhavan vs. Sector 15\n• To Sakal Bhavan / CGO Complex (North Exit): Walk out toward the major government office complexes and administrative buildings.\n• To Belapur Sector 15 / Artist Village (South Exit): Leads out towards the residential areas and the scenic creek-side developments.\n4. Auto Stand & Transport\n• Share-autos and regular autos are easily available at both exits, with a heavy concentration of vehicles waiting near the commercial towers during evening rush hours.\n5. Bus Stand (NMMT)\n• Use the main front exit to access the bus ranks directly.\n6. Food, Snacks & Water\n• On the Platform: Standard IRCTC-approved food stalls are available on both platforms offering refreshments, packaged snacks, and cold beverages.\n🚓 Railway Police Location\nA dedicated GRP and RPF Outpost is located on the ground floor of the station building, situated right next to the Station Master’s Office near the main booking hall.\n💊 Medical Stores & Chemists\n• Station Commercial Complex: Small pharmacy counters are situated inside the extended station building wings.\n• Outside the Gates: Apollo Pharmacy and local chemist shops are located a short 3-minute walk away near the Sakal Bhavan road junction."},"panvel":{"name":"Panvel Railway Station","overview":"\n\nPlatform directions\nPlatform 1 & 2: Suburban Harbour Line trains heading North towards CSMT / Thane.\nPlatform 3: Terminus platform for local trains originating/terminating towards CSMT.\nPlatform 4, 5, 6 & 7: Mainline platforms catering to long-distance express and Roha/Konkan MEMU trains.","directions":[{"platform":"Platform 1 & 2","direction":"Suburban Harbour Line trains heading North towards CSMT / Thane."},{"platform":"Platform 3","direction":"Terminus platform for local trains originating/terminating towards CSMT."},{"platform":"Platform 4, 5, 6 & 7","direction":"Mainline platforms catering to long-distance express and Roha/Konkan MEMU trains."}],"platforms":{"platform 1, 2 & 3 (Suburban Local Side)":[{"title":"platform 1 to other platforms","steps":["Use the massive overhead booking deck and connecting foot overbridges (FOBs). Walk up the wide staircases or ramps from Platform 1/2, cross over via the main bridge, and walk down the designated stairs to reach the mainline Platforms 4 through 7."]},{"title":"Ticket Counters & ATVMs","steps":["Main Overhead Concourse: The grand ticketing deck located above the platforms features extensive UTS manual booking windows and a large cluster of ATVM touchscreens."]},{"title":"Main Station Exit & Auto Stand","steps":["New Panvel Side (East Exit): Walk off the overhead deck down towards the eastern exit gates. The main auto stand is located right outside, serving all sectors of New Panvel, Khanda Colony, and the nearby colleges.","Old Panvel Side (West Exit): Leads out towards the older city limits, the main markets, and the state transport bus stand."]},{"title":"Bus Stand (ST Depot & NMMT)","steps":["Exit through the West Exit (Old Panvel side).","Walk straight for about 5–7 minutes along the station road to reach the Panvel ST Bus Depot. This is a massive state transport hub connecting to Pune, Alibaug, and all parts of Maharashtra. Local NMMT buses stop right outside the station gate."]},{"title":"Food & Basic Amenities","steps":["Inside the Station: The overhead deck acts as a mini-plaza filled with food plazas, refreshment stalls, bookstalls, and fruit juice centers.","Outside the Station: Street food vendors, local restaurants, and tea stalls line the entire approach road on both the East and West sides.","Restrooms & Drinking Water: Large public toilet blocks and water vending machines are functional on the main suburban platforms and the overhead deck."]}],"platform 4, 5, 6 & 7 (Mainline Express Side)":[{"title":"platform 4-7 to Suburban Platforms","steps":["Take the wide ramps or escalators leading up to the main overhead bridge. Walk towards the suburban end of the station and descend onto Platforms 1, 2, or 3."]},{"title":"Ticket Counters & ATVMs","steps":["Mainline Booking Office: A separate reservation and general ticketing counter complex is located on the ground level of the West Side entry building for long-distance travel."]},{"title":"Main Exits: Old Panvel City Side","steps":["West Exit: This is the primary gateway for passengers arriving via long-distance trains, leading directly to the main transport plaza, lodge areas, and markets."]},{"title":"Auto Stand & Transport","steps":["A large, continuous stream of auto-rickshaws operates on a 24-hour basis outside the West Exit to accommodate long-distance passengers arriving at odd hours."]},{"title":"Bus Stand","steps":["Follow the station road signs to the Old Panvel ST stand for long-distance state buses."]},{"title":"Food, Snacks & Water","steps":["On the Mainline Platforms: Large IRCTC food plazas, Jan Aahaar outlets, and multiple stalls selling hot meals, packaged drinking water, and tea are heavily active along Platforms 4 and 5."]}]},"police":"Panvel Junction features a large, full-scale Government Railway Police (GRP) Station and a prominent RPF Thana located on Platform 1 (ground floor level). They handle all security and emergency coordination for both the local and mainline network sections.","medical":"• Right Outside the Station (West Exit): Multi-specialty pharmacies and chemist shops like Wellness Forever and local medical stores are available right across the railway station parking zone.\n• Emergency Medical Room (EMR): A basic railway first-aid and emergency medical room is operational on the ground floor near the station master's office.","policeHi":"Panvel Junction features a large, full-scale Government Railway Police (GRP) Station and a prominent RPF Thana located on Platform 1 (ground floor level). They handle all security and emergency coordination for both the local and mainline network sections.","medicalHi":"• Right Outside the Station (West Exit): Multi-specialty pharmacies and chemist shops like Wellness Forever and local medical stores are available right across the railway station parking zone.\n• Emergency Medical Room (EMR): A basic railway first-aid and emergency medical room is operational on the ground floor near the station master's office.","overviewHi":"\n\nPlatform directions\nPlatform 1 & 2: Suburban Harbour Line trains heading North towards CSMT / Thane.\nPlatform 3: Terminus platform for local trains originating/terminating towards CSMT.\nPlatform 4, 5, 6 & 7: Mainline platforms catering to long-distance express and Roha/Konkan MEMU trains.","sourceText":"Platform\tDirection & Terminus Catered\nPlatform 1 & 2\tSuburban Harbour Line trains heading North towards CSMT / Thane.\nPlatform 3\tTerminus platform for local trains originating/terminating towards CSMT.\nPlatform 4, 5, 6 & 7\tMainline platforms catering to long-distance express and Roha/Konkan MEMU trains.\nplatform 1, 2 & 3 (Suburban Local Side)\n1. platform 1 to other platforms\nUse the massive overhead booking deck and connecting foot overbridges (FOBs). Walk up the wide staircases or ramps from Platform 1/2, cross over via the main bridge, and walk down the designated stairs to reach the mainline Platforms 4 through 7.\n2. Ticket Counters & ATVMs\n• Main Overhead Concourse: The grand ticketing deck located above the platforms features extensive UTS manual booking windows and a large cluster of ATVM touchscreens.\n3. Main Station Exit & Auto Stand\n• New Panvel Side (East Exit): Walk off the overhead deck down towards the eastern exit gates. The main auto stand is located right outside, serving all sectors of New Panvel, Khanda Colony, and the nearby colleges.\n• Old Panvel Side (West Exit): Leads out towards the older city limits, the main markets, and the state transport bus stand.\n4. Bus Stand (ST Depot & NMMT)\n• Exit through the West Exit (Old Panvel side).\n• Walk straight for about 5–7 minutes along the station road to reach the Panvel ST Bus Depot. This is a massive state transport hub connecting to Pune, Alibaug, and all parts of Maharashtra. Local NMMT buses stop right outside the station gate.\n5. Food & Basic Amenities\n• Inside the Station: The overhead deck acts as a mini-plaza filled with food plazas, refreshment stalls, bookstalls, and fruit juice centers.\n• Outside the Station: Street food vendors, local restaurants, and tea stalls line the entire approach road on both the East and West sides.\n• Restrooms & Drinking Water: Large public toilet blocks and water vending machines are functional on the main suburban platforms and the overhead deck.\nplatform 4, 5, 6 & 7 (Mainline Express Side)\n1. platform 4-7 to Suburban Platforms\nTake the wide ramps or escalators leading up to the main overhead bridge. Walk towards the suburban end of the station and descend onto Platforms 1, 2, or 3.\n2. Ticket Counters & ATVMs\n• Mainline Booking Office: A separate reservation and general ticketing counter complex is located on the ground level of the West Side entry building for long-distance travel.\n3. Main Exits: Old Panvel City Side\n• West Exit: This is the primary gateway for passengers arriving via long-distance trains, leading directly to the main transport plaza, lodge areas, and markets.\n4. Auto Stand & Transport\n• A large, continuous stream of auto-rickshaws operates on a 24-hour basis outside the West Exit to accommodate long-distance passengers arriving at odd hours.\n5. Bus Stand\n• Follow the station road signs to the Old Panvel ST stand for long-distance state buses.\n6. Food, Snacks & Water\n• On the Mainline Platforms: Large IRCTC food plazas, Jan Aahaar outlets, and multiple stalls selling hot meals, packaged drinking water, and tea are heavily active along Platforms 4 and 5.\n🚓 Railway Police Location\nPanvel Junction features a large, full-scale Government Railway Police (GRP) Station and a prominent RPF Thana located on Platform 1 (ground floor level). They handle all security and emergency coordination for both the local and mainline network sections.\n💊 Medical Stores & Chemists\n• Right Outside the Station (West Exit): Multi-specialty pharmacies and chemist shops like Wellness Forever and local medical stores are available right across the railway station parking zone.\n• Emergency Medical Room (EMR): A basic railway first-aid and emergency medical room is operational on the ground floor near the station master's office."},"kharghar":{"name":"Kharghar Railway Station","overview":"\n\nPlatform directions\nPlatform 1: Trains heading North towards Vashi, Thane, and CSMT.\nPlatform 2: Trains heading South towards Belapur and Panvel.","directions":[{"platform":"Platform 1","direction":"Trains heading North towards Vashi, Thane, and CSMT."},{"platform":"Platform 2","direction":"Trains heading South towards Belapur and Panvel."}],"platforms":{"platform 1":[{"title":"platform 1 to platform 2","steps":["Locate the wide central foot overbridges (FOBs) or the spacious underground pedestrian subways. Walk down the gentle ramp, pass through the well-lit subway underneath the tracks, and walk up the opposite side to step onto Platform 2."]},{"title":"Ticket Counters & ATVMs","steps":["West Side Concourse (Main Entrance): The main UTS Booking Office is located inside the ground-floor concourse area. A row of ATVM machines is installed next to the main entrance pillars."]},{"title":"Main Station Exit & Auto Stand","steps":["Walk directly out of the Platform 1 concourse to reach the main West Exit facing the Sector 3 residential area and the main highway junction.","A prominent, highly active Auto-Rickshaw Stand is situated right outside the gate. Both regular metered autos and share-autos heading towards Hiranandani Complex, Central Park, and various educational institutes are parked here."]},{"title":"Bus Stand (NMMT Stop)","steps":["Exit through the main West Side gate and walk out to the main service road parallel to the Sion–Panvel Highway (about a 1-minute walk).","You will find the Kharghar Station Bus Stop where frequent NMMT and AC buses head towards Vashi, Thane, Mumbai, and corporate hubs."]},{"title":"Food & Basic Amenities","steps":["Inside the Station: Standard rail snack stalls, tea kiosks, and packaged food outlets are open along the platform length.","Outside the Station: The street outside the West Exit is an active food hub lined with snacks stalls (Vada Pav, Momos, Sandwich) and small juice centers catering to the massive student population from nearby colleges.","Restrooms & Drinking Water: Drinking water taps and public restrooms are located near the central subway entrance on the platform."]}],"platform 2":[{"title":"platform 2 to platform 1","steps":["Use the underground commuter subways or the overhead FOB. Walk down the subway ramp, follow the path under the tracks, and take the stairs up directly onto Platform 1."]},{"title":"Ticket Counters & ATVMs","steps":["East Side Entry: A smaller ticket booking window is present on this side, but it operates with limited hours. Commuters are advised to use the ATVMs near the FOB base or cross over to the main Platform 1 side for manual ticketing."]},{"title":"Main Exits: Highway Side vs. Sector 3","steps":["To Sion–Panvel Highway & Utsav Chowk (West Exit): Cross over to Platform 1 and head straight out to access the main city links and educational hubs.","To Sector 4 / Industrial Area (East Exit): Walk off the back of Platform 2 to exit towards the eastern service roads and developing residential sectors."]},{"title":"Auto Stand & Transport","steps":["Autos are available on the East side service road, but the main, highly-organized stand remains on the West side (Platform 1)."]},{"title":"Bus Stand (NMMT)","steps":["Cross over to the West side service road for all major municipal bus connections."]},{"title":"Food, Snacks & Water","steps":["On the Platform: Standard rail kiosks are available selling biscuits, wafers, cold drinks, and tea."]}]},"police":"Kharghar Station features a Railway Police Help Desk / Outpost located adjacent to the main booking office on the West Side (Platform 1). For formal legal matters or major complaints, the jurisdiction falls under the main Kharghar Police Station situated in the township.","medical":"• Right Outside the West Exit: Step out towards the Sector 3 market road to find Apollo Pharmacy and local chemists located within a 2-minute walking distance from the station gates.\n• Generic Stores: Several generic medical shops operate along the immediate sector road behind the station plaza area.","policeHi":"Kharghar Station features a Railway Police Help Desk / Outpost located adjacent to the main booking office on the West Side (Platform 1). For formal legal matters or major complaints, the jurisdiction falls under the main Kharghar Police Station situated in the township.","medicalHi":"• Right Outside the West Exit: Step out towards the Sector 3 market road to find Apollo Pharmacy and local chemists located within a 2-minute walking distance from the station gates.\n• Generic Stores: Several generic medical shops operate along the immediate sector road behind the station plaza area.","overviewHi":"\n\nPlatform directions\nPlatform 1: Trains heading North towards Vashi, Thane, and CSMT.\nPlatform 2: Trains heading South towards Belapur and Panvel.","sourceText":"Platform\tDirection & Terminus Catered\nPlatform 1\tTrains heading North towards Vashi, Thane, and CSMT.\nPlatform 2\tTrains heading South towards Belapur and Panvel.\nplatform 1\n1. platform 1 to platform 2\nLocate the wide central foot overbridges (FOBs) or the spacious underground pedestrian subways. Walk down the gentle ramp, pass through the well-lit subway underneath the tracks, and walk up the opposite side to step onto Platform 2.\n2. Ticket Counters & ATVMs\n• West Side Concourse (Main Entrance): The main UTS Booking Office is located inside the ground-floor concourse area. A row of ATVM machines is installed next to the main entrance pillars.\n3. Main Station Exit & Auto Stand\n• Walk directly out of the Platform 1 concourse to reach the main West Exit facing the Sector 3 residential area and the main highway junction.\n• A prominent, highly active Auto-Rickshaw Stand is situated right outside the gate. Both regular metered autos and share-autos heading towards Hiranandani Complex, Central Park, and various educational institutes are parked here.\n4. Bus Stand (NMMT Stop)\n• Exit through the main West Side gate and walk out to the main service road parallel to the Sion–Panvel Highway (about a 1-minute walk).\n• You will find the Kharghar Station Bus Stop where frequent NMMT and AC buses head towards Vashi, Thane, Mumbai, and corporate hubs.\n5. Food & Basic Amenities\n• Inside the Station: Standard rail snack stalls, tea kiosks, and packaged food outlets are open along the platform length.\n• Outside the Station: The street outside the West Exit is an active food hub lined with snacks stalls (Vada Pav, Momos, Sandwich) and small juice centers catering to the massive student population from nearby colleges.\n• Restrooms & Drinking Water: Drinking water taps and public restrooms are located near the central subway entrance on the platform.\nplatform 2\n1. platform 2 to platform 1\nUse the underground commuter subways or the overhead FOB. Walk down the subway ramp, follow the path under the tracks, and take the stairs up directly onto Platform 1.\n2. Ticket Counters & ATVMs\n• East Side Entry: A smaller ticket booking window is present on this side, but it operates with limited hours. Commuters are advised to use the ATVMs near the FOB base or cross over to the main Platform 1 side for manual ticketing.\n3. Main Exits: Highway Side vs. Sector 3\n• To Sion–Panvel Highway & Utsav Chowk (West Exit): Cross over to Platform 1 and head straight out to access the main city links and educational hubs.\n• To Sector 4 / Industrial Area (East Exit): Walk off the back of Platform 2 to exit towards the eastern service roads and developing residential sectors.\n4. Auto Stand & Transport\n• Autos are available on the East side service road, but the main, highly-organized stand remains on the West side (Platform 1).\n5. Bus Stand (NMMT)\n• Cross over to the West side service road for all major municipal bus connections.\n6. Food, Snacks & Water\n• On the Platform: Standard rail kiosks are available selling biscuits, wafers, cold drinks, and tea.\n🚓 Railway Police Location\nKharghar Station features a Railway Police Help Desk / Outpost located adjacent to the main booking office on the West Side (Platform 1). For formal legal matters or major complaints, the jurisdiction falls under the main Kharghar Police Station situated in the township.\n💊 Medical Stores & Chemists\n• Right Outside the West Exit: Step out towards the Sector 3 market road to find Apollo Pharmacy and local chemists located within a 2-minute walking distance from the station gates.\n• Generic Stores: Several generic medical shops operate along the immediate sector road behind the station plaza area."}};
+        // Preserve GPS targets from the original project station seed data.
+        // Keys are normalized to match the detailed built-in station database.
+        const STATION_COORDINATES_FROM_SEED = {"airoli":{"lat":19.1585,"lon":72.9986},"koparkhairane":{"lat":19.1292,"lon":73.0031},"ghansoli":{"lat":19.1432,"lon":72.9998},"turbhe":{"lat":19.0832,"lon":73.0152},"rabale":{"lat":19.1491,"lon":72.9975},"vashi":{"lat":19.0682,"lon":72.993},"cbd-belapur":{"lat":19.0232,"lon":73.0375},"panvel":{"lat":18.9894,"lon":73.1132},"kharghar":{"lat":19.0478,"lon":73.0641}};
+        Object.entries(STATION_COORDINATES_FROM_SEED).forEach(([key, point]) => {
+            if (BUILT_IN_STATION_DB[key]) {
+                BUILT_IN_STATION_DB[key].lat = Number(point.lat);
+                BUILT_IN_STATION_DB[key].lon = Number(point.lon);
+            }
+        });
+        // OCR recognizer uses the legacy station codes; map them to the current database keys.
+        const OCR_STATION_KEY_MAP = {AIROLI:'airoli', KOPARKHAIRANE:'koparkhairane', GHANSOLI:'ghansoli', TURBHE:'turbhe', RABALE:'rabale', VASHI:'vashi', CBD_BELAPUR:'cbd-belapur', PANVEL:'panvel', KHARGHAR:'kharghar'};
+        let STATION_DB = {};
+        // Normalize every supplied feature for the language-toggle renderer.
+        Object.values(BUILT_IN_STATION_DB).forEach(station => {
+            Object.values(station.platforms || {}).forEach(features => features.forEach(feature => {
+                if (!feature.titleHi) feature.titleHi = feature.title;
+                if (!feature.stepsHi) feature.stepsHi = feature.steps;
+            }));
+        });
+        let gpsWatchId = null;
+        let gpsTargetKey = "";
+        let gpsAlarmTriggered = false;
+        let backendReady = false;
+        let currentUser = null;
+        let csrfToken = "";
+        let authMode = "login";
+        let authReadyPromise = null;
+        const API_BASE = "/api";
+        async function api(path, options = {}) {
+            const method = String(options.method || "GET").toUpperCase();
+            if (method !== "GET" && authReadyPromise && !path.startsWith("/auth/")) await authReadyPromise;
+            const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+            if (method !== "GET" && csrfToken) headers["X-CSRF-Token"] = csrfToken;
+            const response = await fetch(API_BASE + path, { ...options, method, credentials: "same-origin", headers });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                if (response.status === 401 && data.code === "login_required") renderAuthState(null);
+                throw new Error(data.error || "Backend request failed");
+            }
+            return data;
+        }
+        async function loadStationDatabase() {
+            try {
+                const remote = await api("/stations");
+                // Prefer the supplied full station-layout database over a condensed API payload.
+                STATION_DB = Object.keys(BUILT_IN_STATION_DB).length ? BUILT_IN_STATION_DB : remote;
+                backendReady = true;
+                refreshStationDropdowns();
+                renderStationOverview();
+            } catch (error) {
+                // The same full database works in the static Netlify build without a Flask API.
+                STATION_DB = BUILT_IN_STATION_DB;
+                backendReady = true;
+                refreshStationDropdowns();
+                renderStationOverview();
+            }
+        }
+        loadStationDatabase();
+        authReadyPromise = refreshAuthState();
+
+        function refreshStationDropdowns(changed) {
+            const src = document.getElementById("sourceStation");
+            const dst = document.getElementById("destStation");
+            const srcValue = src.value, dstValue = dst.value;
+            const options = Object.keys(STATION_DB).map(key => ({ value: key, label: STATION_DB[key].name.replace(/ Railway Station$/, "").replace(/ Junction Railway Station$/, " Junction") }));
+            function fill(select, placeholder, excluded, selected) {
+                select.innerHTML = "";
+                const first = document.createElement("option"); first.value = ""; first.textContent = placeholder; select.appendChild(first);
+                options.filter(item => item.value !== excluded).forEach(item => { const option = document.createElement("option"); option.value = item.value; option.textContent = item.label; select.appendChild(option); });
+                select.value = selected && selected !== excluded ? selected : "";
+            }
+            const sourcePlaceholder = isHinglish ? "-- Source Station Chunein --" : "-- Choose Source Station --";
+            const destinationPlaceholder = isHinglish ? "-- Destination Station Chunein --" : "-- Choose Destination Station --";
+            if (changed === "source") { fill(dst, destinationPlaceholder, srcValue, dstValue); }
+            else if (changed === "dest") { fill(src, sourcePlaceholder, dstValue, srcValue); }
+            else { fill(src, sourcePlaceholder, dstValue, srcValue); fill(dst, destinationPlaceholder, srcValue, dstValue); }
+        }
+        document.getElementById("sourceStation").addEventListener("change", () => {
+            refreshStationDropdowns("source");
+            resetGPSIfDestinationChanged();
+        });
+        document.getElementById("destStation").addEventListener("change", () => {
+            refreshStationDropdowns("dest");
+            resetGPSIfDestinationChanged();
+        });
+
+        let selectedTargetStationKey = "";
+        let activeSelectionData = {};
+        let isHinglish = false;
+        let fontState = 0;
+        let themeIndex = 0;
+        const themes = ["theme-dark", "theme-light", "theme-emerald", "theme-indigo"];
+        const themeNames = ["🌙 Dark Slate", "☀️ Clean Light", "🌲 Emerald Forest", "🌊 Royal Indigo"];
+        let isSpeaking = false;
+
+        function toggleSettings() {
+            document.getElementById('settingsModal').classList.toggle('hidden');
+        }
+
+        function setLocalizedText(target, english, hinglish) {
+            const el = typeof target === "string" ? document.getElementById(target) : target;
+            if (!el) return;
+            el.dataset.dynEn = english;
+            el.dataset.dynHi = hinglish;
+            el.textContent = isHinglish ? hinglish : english;
+        }
+
+        function applyDynamicTranslations() {
+            document.querySelectorAll("[data-dyn-en][data-dyn-hi]").forEach(el => {
+                el.textContent = isHinglish ? el.dataset.dynHi : el.dataset.dynEn;
+            });
+        }
+
+        function toggleLanguage() {
+            isHinglish = !isHinglish;
+            document.getElementById('langBtn').innerText = isHinglish ? "ON" : "OFF";
+            document.getElementById('langBtn').className = isHinglish ? "bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl transition" : "bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl transition";
+            
+            document.querySelectorAll('.lang-txt').forEach(el => {
+                const text = isHinglish ? el.getAttribute('data-hi') : el.getAttribute('data-en');
+                if (text) el.innerText = text;
+            });
+            applyDynamicTranslations();
+            refreshStationDropdowns();
+            if (selectedTargetStationKey && !document.getElementById('screen3').classList.contains('hidden')) {
+                refreshPlatformAndFeatureOptions();
+                updateActiveStationTitle();
+            }
+            if (!document.getElementById('screen4').classList.contains('hidden') && activeSelectionData.stationKey) {
+                renderFinalNavigation();
+            }
+            const fontBtn = document.getElementById('fontBtn');
+            if (fontBtn) fontBtn.textContent = isHinglish ? ['Normal', 'Bada', 'Bahut Bada'][fontState] : ['Normal', 'Large', 'Extra Large'][fontState];
+            const themeBtn = document.getElementById('themeBtn');
+            if (themeBtn) themeBtn.textContent = isHinglish ? ['🌙 Dark Slate', '☀️ Saaf Light', '🌲 Emerald Forest', '🌊 Royal Indigo'][themeIndex] : themeNames[themeIndex];
+            if (isSpeaking) { window.speechSynthesis.cancel(); isSpeaking = false; }
+            const voiceBtn = document.getElementById('voiceBtn');
+            if (voiceBtn) voiceBtn.textContent = isHinglish ? '🔊 Suno' : '🔊 Read Aloud';
+        }
+
+        function cycleFontSize() {
+            const body = document.getElementById('appBody');
+            const fontBtn = document.getElementById('fontBtn');
+            body.classList.remove('text-lg-mode', 'text-xl-mode');
+            fontState = (fontState + 1) % 3;
+            if (fontState === 1) {
+                body.classList.add('text-lg-mode');
+                fontBtn.innerText = isHinglish ? "Bada" : "Large";
+            } else if (fontState === 2) {
+                body.classList.add('text-xl-mode');
+                fontBtn.innerText = isHinglish ? "Bahut Bada" : "Extra Large";
+            } else {
+                fontBtn.innerText = "Normal";
+            }
+        }
+
+        function cycleTheme() {
+            const body = document.getElementById('appBody');
+            body.classList.remove('theme-light', 'theme-emerald', 'theme-indigo');
+            
+            themeIndex = (themeIndex + 1) % themes.length;
+            if (themes[themeIndex] !== "theme-dark") {
+                body.classList.add(themes[themeIndex]);
+            }
+            document.getElementById('themeBtn').innerText = isHinglish ? ['🌙 Dark Slate', '☀️ Saaf Light', '🌲 Emerald Forest', '🌊 Royal Indigo'][themeIndex] : themeNames[themeIndex];
+        }
+
+        function toggleSpeech() {
+            if (!('speechSynthesis' in window)) {
+                showInlineMessage("Voice reader is not supported on this browser.", true);
+                return;
+            }
+
+            const voiceBtn = document.getElementById('voiceBtn');
+            if (isSpeaking) {
+                window.speechSynthesis.cancel();
+                isSpeaking = false;
+                voiceBtn.innerText = isHinglish ? "🔊 Suno" : "🔊 Read Aloud";
+                voiceBtn.className = "bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1 rounded-xl transition shadow flex items-center gap-1";
+                return;
+            }
+
+            if (!activeSelectionData.steps || activeSelectionData.steps.length === 0) return;
+
+            window.speechSynthesis.cancel();
+            const stepsToRead = isHinglish ? activeSelectionData.stepsHi : activeSelectionData.steps;
+            const speechText = isHinglish
+                ? `${activeSelectionData.stationName} ke liye navigation. ${activeSelectionData.featureTitle}. Kadam: ` + stepsToRead.map((s, i) => `Kadam ${i+1}: ${String(s).replace(/\s*\[cite:\s*\d+\]/gi, '')}`).join('. ')
+                : `Navigation for ${activeSelectionData.stationName}. ${activeSelectionData.featureTitle}. Steps: ` + stepsToRead.map((s, i) => `Step ${i+1}: ${String(s).replace(/\s*\[cite:\s*\d+\]/gi, '')}`).join('. ');
+
+            const utterance = new SpeechSynthesisUtterance(speechText);
+            utterance.rate = 0.9;
+
+            utterance.onstart = () => {
+                isSpeaking = true;
+                voiceBtn.innerText = isHinglish ? "🛑 Roko" : "🛑 Stop Reading";
+                voiceBtn.className = "bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-3 py-1 rounded-xl transition shadow flex items-center gap-1";
+            };
+
+            utterance.onend = utterance.onerror = () => {
+                isSpeaking = false;
+                voiceBtn.innerText = isHinglish ? "🔊 Suno" : "🔊 Read Aloud";
+                voiceBtn.className = "bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1 rounded-xl transition shadow flex items-center gap-1";
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function goToScreen(screenNum) {
+            if (isSpeaking) { window.speechSynthesis.cancel(); isSpeaking = false; }
+            document.getElementById('screen1').classList.add('hidden');
+            document.getElementById('screen2').classList.add('hidden');
+            document.getElementById('screen3').classList.add('hidden');
+            document.getElementById('screen4').classList.add('hidden');
+
+            if (screenNum === 2) {
+                const src = document.getElementById('sourceStation').value;
+                const dst = document.getElementById('destStation').value;
+
+                if (!backendReady) { showInlineMessage("Station data is still loading or the backend is unavailable. Please wait and retry.", true); document.getElementById('screen1').classList.remove('hidden'); return; }
+                if (!src || !dst) {
+                    showInlineMessage("Please select both Source and Destination stations first.", true);
+                    document.getElementById('screen1').classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('sourceChoiceText').innerText = STATION_DB[src] ? STATION_DB[src].name : src;
+                document.getElementById('destChoiceText').innerText = STATION_DB[dst] ? STATION_DB[dst].name : dst;
+            }
+
+            document.getElementById(`screen${screenNum}`).classList.remove('hidden');
+        }
+
+        function resetGPSIfDestinationChanged() {
+            if (gpsWatchId !== null && document.getElementById("destStation").value !== gpsTargetKey) {
+                stopGPSAlarm(false);
+                const status = document.getElementById("gpsStatus");
+                if (status) setLocalizedText(status, "Destination changed. Activate GPS again to track the new destination.", "Destination badal gaya. Naya destination track karne ke liye GPS dobara chalu karein.");
+            }
+        }
+
+        function startGPSAlarm() {
+            const status = document.getElementById("gpsStatus");
+            const startButton = document.getElementById("startGPSButton");
+            const stopButton = document.getElementById("stopGPSButton");
+            const badge = document.getElementById("gpsLiveBadge");
+            const destKey = document.getElementById("destStation").value;
+
+            if (!destKey) {
+                setLocalizedText(status, "Choose a destination station before activating GPS.", "GPS chalu karne se pehle destination station chunein.");
+                showInlineMessage("Choose a destination station before activating GPS.", true);
+                return;
+            }
+            if (!navigator.geolocation) {
+                setLocalizedText(status, "This browser does not support GPS location access.", "Is browser mein GPS location access support nahi hota.");
+                return;
+            }
+            const targetStation = STATION_DB[destKey];
+            if (!targetStation || !Number.isFinite(Number(targetStation.lat)) || !Number.isFinite(Number(targetStation.lon))) {
+                setLocalizedText(status, "GPS coordinates are unavailable for this destination station.", "Is destination station ke GPS coordinates available nahi hain.");
+                return;
+            }
+
+            stopGPSAlarm(false);
+            gpsTargetKey = destKey;
+            gpsAlarmTriggered = false;
+            setLocalizedText(status, `Requesting location permission to track ${targetStation.name}…`, `${targetStation.name} ko track karne ke liye location permission maangi ja rahi hai…`);
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            badge.textContent = "STARTING";
+            badge.className = "text-[10px] rounded-lg px-2 py-1 bg-amber-950 text-amber-300";
+
+            gpsWatchId = navigator.geolocation.watchPosition((position) => {
+                // If the passenger changed the destination while the permission prompt was open, stop stale tracking.
+                if (document.getElementById("destStation").value !== gpsTargetKey) {
+                    stopGPSAlarm(false);
+                    setLocalizedText(status, "Destination changed. Activate GPS again to track the new destination.", "Destination badal gaya. Naya destination track karne ke liye GPS dobara chalu karein.");
+                    return;
+                }
+                const distance = getDistanceFromLatLonInKm(
+                    position.coords.latitude, position.coords.longitude,
+                    Number(targetStation.lat), Number(targetStation.lon)
+                );
+                const accuracy = Number.isFinite(position.coords.accuracy) ? Math.round(position.coords.accuracy) : null;
+                const accuracyText = accuracy === null ? "" : ` Location accuracy: about ${accuracy} m.`;
+                badge.textContent = "LIVE";
+                badge.className = "text-[10px] rounded-lg px-2 py-1 bg-emerald-950 text-emerald-300";
+                startButton.disabled = false;
+
+                if (distance <= 2) {
+                    if (!gpsAlarmTriggered) {
+                        gpsAlarmTriggered = true;
+                        playAlarmSound();
+                        showInlineMessage(isHinglish ? `Aap ${targetStation.name} ke paas pahunch rahe hain — lagbhag ${distance.toFixed(2)} km door.` : `You are approaching ${targetStation.name} — about ${distance.toFixed(2)} km away.`);
+                    }
+                    setLocalizedText(status, `Proximity alarm: you are about ${distance.toFixed(2)} km from ${targetStation.name}.${accuracyText}`, `Proximity alarm: aap ${targetStation.name} se lagbhag ${distance.toFixed(2)} km door hain.${accuracy === null ? "" : ` Location accuracy: lagbhag ${accuracy} m.`}`);
+                } else {
+                    if (distance > 2.5) gpsAlarmTriggered = false;
+                    setLocalizedText(status, `GPS active · ${distance.toFixed(2)} km from ${targetStation.name}.${accuracyText}`, `GPS chalu hai · ${targetStation.name} se ${distance.toFixed(2)} km door.${accuracy === null ? "" : ` Location accuracy: lagbhag ${accuracy} m.`}`);
+                }
+            }, (error) => {
+                const message = error.code === 1 ? "Location permission was denied. Allow location access in your browser settings and try again." :
+                    error.code === 2 ? "Your current location is unavailable. Check device location settings and try again." :
+                    "GPS timed out. Check location settings or try again outdoors.";
+                const messageHi = error.code === 1 ? "Location permission nahi mili. Browser settings mein location access allow karke dobara try karein." :
+                    error.code === 2 ? "Aapki current location available nahi hai. Device location settings check karke dobara try karein." :
+                    "GPS ka time khatam ho gaya. Location settings check karein ya bahar dobara try karein.";
+                setLocalizedText(status, message, messageHi);
+                stopGPSAlarm(false);
+                startButton.disabled = false;
+                badge.textContent = "OFF";
+                badge.className = "text-[10px] rounded-lg px-2 py-1 bg-slate-800 text-slate-400";
+            }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+        }
+
+        function stopGPSAlarm(updateStatus = true) {
+            if (gpsWatchId !== null && navigator.geolocation) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+            }
+            gpsWatchId = null;
+            gpsTargetKey = "";
+            gpsAlarmTriggered = false;
+            const startButton = document.getElementById("startGPSButton");
+            const stopButton = document.getElementById("stopGPSButton");
+            const badge = document.getElementById("gpsLiveBadge");
+            if (startButton) startButton.disabled = false;
+            if (stopButton) stopButton.disabled = true;
+            if (badge) {
+                badge.textContent = "OFF";
+                badge.className = "text-[10px] rounded-lg px-2 py-1 bg-slate-800 text-slate-400";
+            }
+            if (updateStatus) {
+                const status = document.getElementById("gpsStatus");
+                if (status) setLocalizedText(status, "GPS tracking stopped. Your live location was not saved.", "GPS tracking band ho gayi. Aapki live location save nahi hui.");
+            }
+        }
+
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * (Math.PI / 180);
+            const dLon = (lon2 - lon1) * (Math.PI / 180);
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2;
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        }
+
+        function playAlarmSound() {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                const audioContext = new AudioContextClass();
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                oscillator.type = "sine";
+                oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+                gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+                oscillator.onended = () => audioContext.close().catch(() => {});
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 1);
+            } catch (error) {
+                console.warn("Could not play GPS proximity sound:", error);
+            }
+        }
+
+        function updateActiveStationTitle() {
+            const station = STATION_DB[selectedTargetStationKey];
+            if (!station) return;
+            document.getElementById('activeStationTitle').textContent = (isHinglish ? "Navigation ke liye: " : "Navigation for ") + station.name;
+            renderStationOverview();
+        }
+
+        function displayPlatformName(name) {
+            if (!isHinglish) return name;
+            // Keep station/line names and platform numbers unchanged; translate directional wording in Roman Hinglish.
+            return name
+                .replace(/Southbound\s*[-–]?\s*Vashi\/Panvel/gi, 'Vashi/Panvel ki taraf')
+                .replace(/Northbound\s*[-–]?\s*Thane/gi, 'Thane ki taraf')
+                .replace(/Southbound/gi, 'Southbound ki taraf')
+                .replace(/Northbound/gi, 'Northbound ki taraf')
+                .replace(/West Side/gi, 'Pashchim taraf')
+                .replace(/Main Entrance/gi, 'Main Entry')
+                .replace(/Vashi\/Panvel Bound/gi, 'Vashi/Panvel ki taraf')
+                .replace(/Up Harbour to CSMT/gi, 'CSMT ki taraf Up Harbour')
+                .replace(/Suburban Local Side/gi, 'Suburban Local side')
+                .replace(/Residential/gi, 'Residential area')
+                .replace(/Trans-Harbour/gi, 'Trans-Harbour Line');
+        }
+
+        function localizeUiMessage(message) {
+            if (!isHinglish) return message;
+            const exact = {
+                'Voice reader is not supported on this browser.': 'Is browser mein voice reader support nahi hai.',
+                'Station data is still loading or the backend is unavailable. Please wait and retry.': 'Station data load ho raha hai ya backend available nahi hai. Thoda ruk kar dobara try karein.',
+                'Please select both Source and Destination stations first.': 'Pehle Source aur Destination station chunein.',
+                'Choose a destination station before activating GPS.': 'GPS chalu karne se pehle destination station chunein.',
+                'Please select both Platform and Feature.': 'Platform aur Feature dono chunein.',
+                'Your personalized passenger dashboard will appear here after sign in.': 'Sign in karne ke baad aapka personal passenger dashboard yahan dikhega.',
+                'Sign in to view and save your personal routes.': 'Apne routes dekhne aur save karne ke liye sign in karein.',
+                'Guest searches are not stored on the server. Sign in to keep your search history.': 'Guest searches server par save nahi hoti. Search history rakhne ke liye sign in karein.',
+                'No saved routes yet. Open a station guide and tap Save.': 'Abhi koi saved route nahi hai. Station guide kholkar Save dabayein.',
+                'No search history yet.': 'Abhi search history nahi hai.',
+                'Loading saved routes…': 'Saved routes load ho rahe hain…',
+                'Loading search history…': 'Search history load ho rahi hai…',
+                'Could not load history.': 'History load nahi ho saki.'
+            };
+            if (exact[message]) return exact[message];
+            if (message.startsWith('Could not load saved routes: ')) return 'Saved routes load nahi ho sake: ' + message.slice('Could not load saved routes: '.length);
+            if (message.startsWith('Account created. Welcome to TransitVision!')) return 'Account ban gaya. TransitVision mein swagat hai!';
+            if (message === 'You are signed in.') return 'Aap sign in ho gaye hain.';
+            if (message === 'You have signed out.') return 'Aap sign out ho gaye hain.';
+            if (message === 'Please select both Source and Destination stations first.') return 'Pehle Source aur Destination station chunein.';
+            return message;
+        }
+
+        function refreshPlatformAndFeatureOptions() {
+            const station = STATION_DB[selectedTargetStationKey];
+            if (!station) return;
+            const platformSelect = document.getElementById('platformSelect');
+            const featureSelect = document.getElementById('featureSelect');
+            const oldPlatform = platformSelect.value;
+            const oldFeature = featureSelect.value;
+            platformSelect.innerHTML = '';
+            const platformPlaceholder = document.createElement('option');
+            platformPlaceholder.value = '';
+            platformPlaceholder.textContent = isHinglish ? '-- Platform Chunein --' : '-- Choose Platform --';
+            platformSelect.appendChild(platformPlaceholder);
+            Object.keys(station.platforms).forEach(platName => {
+                const option = document.createElement('option');
+                option.value = platName;
+                option.textContent = displayPlatformName(platName);
+                platformSelect.appendChild(option);
+            });
+            platformSelect.value = oldPlatform;
+            featureSelect.innerHTML = '';
+            const featurePlaceholder = document.createElement('option');
+            featurePlaceholder.value = '';
+            featurePlaceholder.textContent = oldPlatform
+                ? (isHinglish ? '-- Feature Chunein --' : '-- Select Feature --')
+                : (isHinglish ? '-- Pehle Platform Chunein --' : '-- Select Platform First --');
+            featureSelect.appendChild(featurePlaceholder);
+            if (oldPlatform && station.platforms[oldPlatform]) {
+                station.platforms[oldPlatform].forEach((feature, index) => {
+                    const option = document.createElement('option');
+                    option.value = String(index);
+                    option.textContent = isHinglish ? (feature.titleHi || feature.title) : feature.title;
+                    featureSelect.appendChild(option);
+                });
+                featureSelect.value = oldFeature;
+            }
+        }
+
+        function renderStationOverview() {
+            const station = STATION_DB[selectedTargetStationKey];
+            const heading = document.getElementById('stationOverviewHeading');
+            const body = document.getElementById('stationOverviewText');
+            if (!heading || !body) return;
+            if (!station) {
+                heading.textContent = isHinglish ? 'Station ka Overview' : 'Station Overview';
+                body.textContent = isHinglish ? 'Station chunein, phir overview yahan dikhega.' : 'Select a station to see its overview.';
+                return;
+            }
+            heading.textContent = (isHinglish ? 'Station ka Overview — ' : 'Station Overview — ') + station.name;
+            const overview = isHinglish ? (station.overviewHi || station.overview || '') : (station.overview || '');
+            body.textContent = overview || (isHinglish ? 'Is station ke liye overview text database mein nahi diya gaya.' : 'No separate overview text is provided for this station in the supplied database.');
+        }
+
+        function selectTargetStation(type) {
+            if (type === 'source') {
+                selectedTargetStationKey = document.getElementById('sourceStation').value;
+            } else {
+                selectedTargetStationKey = document.getElementById('destStation').value;
+            }
+            const station = STATION_DB[selectedTargetStationKey];
+            if (!station) return;
+            updateActiveStationTitle();
+            renderStationOverview();
+            refreshPlatformAndFeatureOptions();
+            goToScreen(3);
+        }
+
+        function onPlatformChange() {
+            const platform = document.getElementById('platformSelect').value;
+            const featureSelect = document.getElementById('featureSelect');
+            featureSelect.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = isHinglish ? '-- Feature Chunein --' : '-- Select Feature --';
+            featureSelect.appendChild(placeholder);
+            if (!platform || !selectedTargetStationKey) return;
+            const features = STATION_DB[selectedTargetStationKey].platforms[platform] || [];
+            features.forEach((feature, index) => {
+                const option = document.createElement('option');
+                option.value = String(index);
+                option.textContent = isHinglish ? (feature.titleHi || feature.title) : feature.title;
+                featureSelect.appendChild(option);
+            });
+        }
+
+        function renderFinalNavigation() {
+            const platName = document.getElementById('platformSelect').value;
+            const featIdx = document.getElementById('featureSelect').value;
+
+            if (!platName || featIdx === "") {
+                showInlineMessage("Please select both Platform and Feature.", true);
+                return;
+            }
+
+            const station = STATION_DB[selectedTargetStationKey];
+            const feature = station.platforms[platName][featIdx];
+
+            activeSelectionData = {
+                stationKey: selectedTargetStationKey,
+                stationName: station.name,
+                platform: platName,
+                featureTitle: isHinglish ? feature.titleHi : feature.title,
+                steps: feature.steps,
+                stepsHi: feature.stepsHi
+            };
+
+            document.getElementById('visualTitle').innerText = `${station.name} - ${activeSelectionData.featureTitle}`;
+
+            const stepsToRender = isHinglish ? feature.stepsHi : feature.steps;
+            const stepsList = document.getElementById('stepsList');
+            stepsList.innerHTML = "";
+            stepsToRender.forEach((step, idx) => {
+                stepsList.innerHTML += `
+                    <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 flex items-start gap-3">
+                        <span class="bg-emerald-500/20 text-emerald-400 font-bold text-xs px-2.5 py-1 rounded-lg border border-emerald-500/30">${idx + 1}</span>
+                        <p class="text-xs leading-relaxed">${escapeHtml(String(step).replace(/\s*\[cite:\s*\d+\]/gi, ''))}</p>
+                    </div>
+                `;
+            });
+
+            document.getElementById('policeInfo').innerText = String(isHinglish ? station.policeHi : station.police).replace(/\s*\[cite:\s*\d+\]/gi, '');
+            document.getElementById('medicalInfo').innerText = String(isHinglish ? station.medicalHi : station.medical).replace(/\s*\[cite:\s*\d+\]/gi, '');
+
+            document.getElementById('policeMapLink').href = `https://www.google.com/maps/search/?api=1&query=Railway+Police+Station+${encodeURIComponent(station.name)}`;
+            document.getElementById('medicalMapLink').href = `https://www.google.com/maps/search/?api=1&query=Medical+Pharmacy+near+${encodeURIComponent(station.name)}`;
+
+            recordHistory(station.name, activeSelectionData.featureTitle);
+            goToScreen(4);
+        }
+
+        // OCR: preprocess a photo for faded thermal-ticket print, then fall back to the original.
+        function prepareTicketImage(file) {
+            return new Promise((resolve, reject) => {
+                const image = new Image();
+                const objectUrl = URL.createObjectURL(file);
+                image.onload = () => {
+                    try {
+                        const maxSide = 2600;
+                        const scale = Math.min(2.5, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+                        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const px = frame.data;
+                        // Grayscale + contrast enhancement; avoid hard thresholding that can erase faint thermal print.
+                        for (let i = 0; i < px.length; i += 4) {
+                            const gray = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+                            const contrast = Math.max(0, Math.min(255, (gray - 128) * 1.45 + 145));
+                            px[i] = px[i + 1] = px[i + 2] = contrast;
+                        }
+                        ctx.putImageData(frame, 0, 0);
+                        URL.revokeObjectURL(objectUrl);
+                        resolve(canvas);
+                    } catch (e) { URL.revokeObjectURL(objectUrl); reject(e); }
+                };
+                image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read the selected image.')); };
+                image.src = objectUrl;
+            });
+        }
+
+        // Match common railway-ticket OCR mistakes without treating every short fragment as a station.
+        function matchStationNames(text) {
+            const raw = String(text || '').toUpperCase().replace(/[\u200B-\u200D\uFEFF]/g, ' ');
+            const normalized = raw.replace(/[^A-Z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+            const tokens = normalized.split(' ').filter(Boolean);
+            const found = new Map();
+            const add = (value, position) => {
+                if (!found.has(value) || position < found.get(value)) found.set(value, position);
+            };
+            const exactRules = [
+                { value: 'VASHI', re: /\bV\s*A\s*S\s*H\s*I\b|\bVSH\b/ },
+                { value: 'CBD_BELAPUR', re: /\bBEL\s*A\s*PUR\b|\bCBD\s*BELAPUR\b|\bBEPR\b/ },
+                { value: 'AIROLI', re: /\bAI\s*RO\s*LI\b|\bAER\b/ },
+                { value: 'KOPARKHAIRANE', re: /\bKOPAR(?:KHAIRANE|KHAIRANE)?\b|\bKHAI?RANE\b/ },
+                { value: 'GHANSOLI', re: /\bGHAN\s*SO\s*LI\b/ },
+                { value: 'TURBHE', re: /\bTURB\s*HE\b/ },
+                { value: 'RABALE', re: /\bRABA\s*LE\b/ },
+                { value: 'PANVEL', re: /\bPAN\s*VEL\b|\bPNVL\b/ },
+                { value: 'KHARGHAR', re: /\bKHAR\s*GHAR\b/ }
+            ];
+            for (const rule of exactRules) {
+                const match = rule.re.exec(raw);
+                if (match) add(rule.value, match.index);
+            }
+
+            // Levenshtein distance tolerates typical OCR substitutions, e.g. UNSHI -> VASHI.
+            function editDistance(a, b) {
+                const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+                for (let i = 1; i <= a.length; i++) {
+                    let previous = row[0];
+                    row[0] = i;
+                    for (let j = 1; j <= b.length; j++) {
+                        const saved = row[j];
+                        row[j] = Math.min(row[j] + 1, row[j - 1] + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1));
+                        previous = saved;
+                    }
+                }
+                return row[b.length];
+            }
+            const fuzzyRules = [
+                { value: 'VASHI', aliases: ['VASHI'], max: 2 },
+                { value: 'CBD_BELAPUR', aliases: ['BELAPUR', 'BELAPURCBD', 'BELWR'], max: 2 },
+                { value: 'AIROLI', aliases: ['AIROLI'], max: 2 },
+                { value: 'KOPARKHAIRANE', aliases: ['KOPARKHAIRANE', 'KHAIRANE', 'KOPAR'], max: 2 },
+                { value: 'GHANSOLI', aliases: ['GHANSOLI'], max: 2 },
+                { value: 'TURBHE', aliases: ['TURBHE'], max: 2 },
+                { value: 'RABALE', aliases: ['RABALE'], max: 2 },
+                { value: 'PANVEL', aliases: ['PANVEL'], max: 2 },
+                { value: 'KHARGHAR', aliases: ['KHARGHAR'], max: 2 }
+            ];
+            for (let i = 0; i < tokens.length; i++) {
+                const token = tokens[i];
+                for (const rule of fuzzyRules) {
+                    for (const alias of rule.aliases) {
+                        if (token.length < 4 || alias.length < 4) continue;
+                        const max = (rule.value === 'CBD_BELAPUR' && /\bCBD\b/.test(normalized)) ? 3 : rule.max;
+                        if (Math.abs(token.length - alias.length) <= max && editDistance(token, alias) <= max) {
+                            // Require CBD nearby for fuzzy BELAPUR matches, to reduce false positives.
+                            if (rule.value === 'CBD_BELAPUR' && !/\bCBD\b/.test(normalized) && token !== 'BELAPUR') continue;
+                            add(rule.value, raw.indexOf(token));
+                        }
+                    }
+                }
+            }
+            return Array.from(found.entries()).sort((a, b) => a[1] - b[1]).map(([name]) => name);
+        }
+
+        async function processTicketFile(file) {
+            if (!file) return;
+            const status = document.getElementById('ocrStatus');
+            const preview = document.getElementById('previewContainer');
+            const fileName = document.getElementById('fileNameText');
+            const debugPanel = document.getElementById('ocrDebugPanel');
+            const detectedText = document.getElementById('ocrDetectedText');
+            setLocalizedText(fileName, `✓ File selected: ${file.name}`, `✓ File select hui: ${file.name}`);
+            preview.classList.remove('hidden');
+            debugPanel.classList.add('hidden');
+            detectedText.textContent = '';
+            setLocalizedText(status, 'Preparing ticket image...', 'Ticket image taiyar ho rahi hai...');
+
+            if (!window.Tesseract || typeof Tesseract.recognize !== 'function') {
+                setLocalizedText(status, 'OCR library did not load. Check your internet connection, refresh, and try again.', 'OCR library load nahi hui. Internet connection check karke refresh karein aur dobara try karein.');
+                return;
+            }
+
+            try {
+                let result;
+                let text = '';
+                const enhanced = await prepareTicketImage(file);
+                setLocalizedText(status, 'Reading enhanced ticket image...', 'Behtar ki gayi ticket image padhi ja rahi hai...');
+                try {
+                    result = await Tesseract.recognize(enhanced, 'eng', {
+                        logger: m => {
+                            if (m.status === 'recognizing text') setLocalizedText(status, `Reading ticket text: ${Math.round((m.progress || 0) * 100)}%`, `Ticket ka text padha ja raha hai: ${Math.round((m.progress || 0) * 100)}%`);
+                            else if (m.status) setLocalizedText(status, `OCR: ${m.status}...`, `OCR: ${m.status}...`);
+                        }
+                    });
+                    text = (result?.data?.text || '').trim();
+                } catch (enhancedError) {
+                    console.warn('Enhanced-image OCR failed; retrying original image.', enhancedError);
+                }
+                if (text.length < 5) {
+                    setLocalizedText(status, 'Trying original image...', 'Original image par try kiya ja raha hai...');
+                    result = await Tesseract.recognize(file, 'eng', {
+                        logger: m => { if (m.status === 'recognizing text') setLocalizedText(status, `Reading original image: ${Math.round((m.progress || 0) * 100)}%`, `Original image padhi ja rahi hai: ${Math.round((m.progress || 0) * 100)}%`); }
+                    });
+                    text = (result?.data?.text || '').trim();
+                }
+
+                console.log('OCR Extracted Text:', text);
+                detectedText.textContent = text || '(No text detected by OCR.)';
+                debugPanel.classList.remove('hidden');
+                const foundStations = matchStationNames(text)
+                    .map(code => OCR_STATION_KEY_MAP[code] || code.toLowerCase().replace(/_/g, '-'))
+                    .filter((key, index, all) => Object.prototype.hasOwnProperty.call(STATION_DB, key) && all.indexOf(key) === index);
+                const source = document.getElementById('sourceStation');
+                const dest = document.getElementById('destStation');
+                if (foundStations.length >= 2) {
+                    source.value = foundStations[0];
+                    dest.value = foundStations.find(name => name !== source.value) || '';
+                    source.dispatchEvent(new Event('change', { bubbles: true }));
+                    dest.dispatchEvent(new Event('change', { bubbles: true }));
+                    setLocalizedText(status, `✓ Found stations: ${foundStations.map(key => STATION_DB[key]?.name?.replace(/ Railway Station$/, '').replace(/ Junction Railway Station$/, ' Junction') || key).join(', ')}. Please confirm source and destination.`, `✓ Stations mil gaye: ${foundStations.map(key => STATION_DB[key]?.name?.replace(/ Railway Station$/, '').replace(/ Junction Railway Station$/, ' Junction') || key).join(', ')}. Source aur destination confirm karein.`);
+                } else if (foundStations.length === 1) {
+                    source.value = foundStations[0];
+                    source.dispatchEvent(new Event('change', { bubbles: true }));
+                    setLocalizedText(status, `✓ Found ${STATION_DB[foundStations[0]]?.name?.replace(/ Railway Station$/, '').replace(/ Junction Railway Station$/, ' Junction') || foundStations[0]}. Select the other station manually and confirm.`, `✓ ${STATION_DB[foundStations[0]]?.name?.replace(/ Railway Station$/, '').replace(/ Junction Railway Station$/, ' Junction') || foundStations[0]} mil gaya. Doosra station manually select karke confirm karein.`);
+                } else if (text) {
+                    setLocalizedText(status, 'Text was read, but station names were not confidently matched. Check “View text detected by OCR” and select stations manually.', 'Text padha gaya, lekin station names match nahi hue. “OCR se mila text dekhein” kholkar stations manually select karein.');
+                } else {
+                    setLocalizedText(status, 'No text was detected. Try a closer, brighter, straight-on photo or choose another image.', 'Koi text nahi mila. Ticket ki clear, roshni mein seedhi photo lein ya doosri image chunein.');
+                }
+            } catch (err) {
+                console.error('OCR Processing Error:', err);
+                setLocalizedText(status, `OCR failed: ${err?.message || 'unknown error'}. Check internet access and try again, or select stations manually.`, `OCR nahi ho saka: ${err?.message || 'unknown error'}. Internet check karke dobara try karein ya stations manually select karein.`);
+            }
+        }
+
+        document.getElementById('cameraInput').addEventListener('change', (e) => processTicketFile(e.target.files[0]));
+        document.getElementById('galleryInput').addEventListener('change', (e) => processTicketFile(e.target.files[0]));
+
+        function showTab(tab) {
+            if (isSpeaking) { window.speechSynthesis.cancel(); isSpeaking = false; }
+            if (tab === 'app') {
+                document.getElementById('appTab').classList.remove('hidden');
+                document.getElementById('savedTab').classList.add('hidden');
+                document.getElementById('tabAppBtn').className = "bg-white/20 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition";
+                document.getElementById('tabSavedBtn').className = "bg-black/20 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition";
+            } else {
+                document.getElementById('appTab').classList.add('hidden');
+                document.getElementById('savedTab').classList.remove('hidden');
+                document.getElementById('tabSavedBtn').className = "bg-white/20 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition";
+                document.getElementById('tabAppBtn').className = "bg-black/20 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition";
+                loadSavedAndHistory();
+            }
+        }
+
+        async function saveCurrentJourney() {
+            if (!activeSelectionData.stationName) return;
+            if (!currentUser) { openAuthModal("login"); return; }
+            try {
+                const result = await api("/saved", { method: "POST", body: JSON.stringify(activeSelectionData) });
+                showInlineMessage(result.message);
+                await loadSavedAndHistory();
+            } catch (error) { showInlineMessage(error.message, true); }
+        }
+
+        async function recordHistory(stationName, featureTitle) {
+            // Guest browsing is intentionally not stored on the server.
+            if (!currentUser) return;
+            try { await api("/history", { method: "POST", body: JSON.stringify({ stationName, featureTitle }) }); }
+            catch (error) { console.error("History save failed:", error); }
+        }
+
+        async function loadSavedAndHistory() {
+            const savedContainer = document.getElementById('savedListContainer');
+            const historyContainer = document.getElementById('historyListContainer');
+            const dashboard = document.getElementById('personalDashboard');
+            if (!currentUser) {
+                dashboard.innerHTML = isHinglish
+                    ? `<h3 class="font-bold text-white">Swagat hai, guest 👋</h3><p class="text-xs text-slate-400">TransitVision mein apne saved routes, recent history aur frequently used stations ke liye sign in karein.</p><button onclick="openAuthModal('login')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs">Sign in / Account banayein</button>`
+                    : `<h3 class="font-bold text-white">Welcome, guest 👋</h3><p class="text-xs text-slate-400">Sign in to personalize TransitVision with your own saved routes, recent history and frequently used stations.</p><button onclick="openAuthModal('login')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs">Sign in / Create account</button>`;
+                savedContainer.innerHTML = isHinglish
+                    ? `<p class="text-xs text-slate-400">Apne personal routes dekhne aur save karne ke liye sign in karein.</p>`
+                    : `<p class="text-xs text-slate-400">Sign in to view and save your personal routes.</p>`;
+                historyContainer.innerHTML = isHinglish
+                    ? `<p class="text-xs text-slate-400">Guest searches server par save nahi hoti. Search history rakhne ke liye sign in karein.</p>`
+                    : `<p class="text-xs text-slate-400">Guest searches are not stored on the server. Sign in to keep your search history.</p>`;
+                return;
+            }
+            savedContainer.innerHTML = isHinglish ? `<p class="text-xs text-slate-400 italic">Saved routes load ho rahe hain…</p>` : `<p class="text-xs text-slate-400 italic">Loading saved routes…</p>`;
+            historyContainer.innerHTML = isHinglish ? `<p class="text-xs text-slate-400 italic">Search history load ho rahi hai…</p>` : `<p class="text-xs text-slate-400 italic">Loading search history…</p>`;
+            try {
+                const [savedData, historyData, profileData] = await Promise.all([api("/saved"), api("/history"), api("/profile")]);
+                const saved = savedData.items || [];
+                savedContainer.innerHTML = saved.length === 0
+                    ? `<p class="text-xs text-slate-400 italic">${isHinglish ? 'Abhi koi saved route nahi hai. Station guide kholkar Save dabayein.' : 'No saved routes yet. Open a station guide and tap Save.'}</p>`
+                    : saved.map(item => `<div class="glass-card p-3 rounded-2xl flex justify-between items-center text-xs"><div><span class="font-bold text-indigo-300">${escapeHtml(item.stationName)}</span><p class="text-slate-300 text-[11px]">${escapeHtml(localizedFeatureTitle(item.stationKey || item.stationName, item.platform, item.featureTitle))}</p></div><button onclick="removeSaved('${item.id}')" aria-label="${isHinglish ? 'Saved route hatao' : 'Remove saved route'}" class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1">✕</button></div>`).join('');
+                const history = historyData.items || [];
+                historyContainer.innerHTML = history.length === 0
+                    ? `<p class="text-xs text-slate-400 italic">${isHinglish ? 'Abhi search history nahi hai.' : 'No search history yet.'}</p>`
+                    : history.map(item => `<div class="glass-card p-3 rounded-2xl flex justify-between items-center text-xs"><div><span class="font-semibold text-slate-200">${escapeHtml(item.stationName)}</span><span class="text-slate-400 text-[11px] block">${escapeHtml(localizedFeatureTitle(item.stationKey || item.stationName, item.platform, item.featureTitle))}</span></div><span class="text-[10px] text-indigo-300 bg-indigo-950 px-2 py-1 rounded-lg border border-indigo-800">${escapeHtml(item.timestamp)}</span></div>`).join('');
+                const frequent = profileData.frequentlyUsedStations || [];
+                dashboard.innerHTML = `<div class="flex items-start justify-between gap-3"><div><p class="text-[10px] text-indigo-300 uppercase tracking-widest font-bold">${isHinglish ? 'Passenger Dashboard' : 'Passenger dashboard'}</p><h3 class="text-lg font-black text-white mt-1">${isHinglish ? 'Swagat hai' : 'Welcome'}, ${escapeHtml(currentUser.name)} 👋</h3><p class="text-xs text-slate-400 mt-1">${isHinglish ? 'Aapke routes aur history sirf aapke account ke liye hain.' : 'Your routes and history are private to your account.'}</p></div><button onclick="openAuthModal()" class="text-[10px] text-indigo-300 underline">${isHinglish ? 'Account' : 'Account'}</button></div><div class="pt-2"><p class="text-[10px] text-slate-400 uppercase tracking-wider mb-2">${isHinglish ? 'Aksar use kiye gaye stations' : 'Frequently used stations'}</p>${frequent.length ? `<div class="flex flex-wrap gap-2">${frequent.map(f => `<span class="bg-indigo-950/70 border border-indigo-800 text-indigo-200 px-3 py-1.5 rounded-xl text-[11px]">${escapeHtml(f.stationName)} <span class="text-indigo-400">· ${f.uses}</span></span>`).join('')}</div>` : `<p class="text-xs text-slate-500">${isHinglish ? 'Kuch searches ke baad frequently used stations yahan dikhenge.' : 'Your frequently used stations will appear after a few searches.'}</p>`}</div>`;
+            } catch (error) {
+                savedContainer.innerHTML = `<p class="text-xs text-rose-400">${isHinglish ? 'Saved routes load nahi ho sake' : 'Could not load saved routes'}: ${escapeHtml(error.message)}</p>`;
+                historyContainer.innerHTML = `<p class="text-xs text-rose-400">${isHinglish ? 'History load nahi ho saki.' : 'Could not load history.'}</p>`;
+            }
+        }
+
+        function localizedFeatureTitle(stationKey, platform, englishTitle) {
+            if (!isHinglish) return englishTitle || '';
+            const station = STATION_DB[stationKey] || Object.values(STATION_DB).find(item => item.name === stationKey || item.name.replace(/ Railway Station$/, '').replace(/ Junction Railway Station$/, ' Junction') === stationKey);
+            if (!station) return englishTitle || '';
+            for (const [platformName, features] of Object.entries(station.platforms || {})) {
+                if (platform && platformName !== platform) continue;
+                const found = features.find(feature => feature.title === englishTitle);
+                if (found) return found.titleHi || found.title;
+            }
+            return englishTitle || '';
+        }
+
+        function showInlineMessage(message, isError = false) {
+            const existing = document.getElementById('inlineAppMessage');
+            if (existing) existing.remove();
+            const box = document.createElement('div');
+            box.id = 'inlineAppMessage';
+            box.className = `fixed bottom-4 left-1/2 -translate-x-1/2 z-[80] max-w-sm w-[calc(100%-2rem)] rounded-xl px-4 py-3 text-xs shadow-xl ${isError ? 'bg-rose-950 border border-rose-700 text-rose-200' : 'bg-emerald-950 border border-emerald-700 text-emerald-200'}`;
+            box.textContent = localizeUiMessage(message);
+            document.body.appendChild(box);
+            setTimeout(() => box.remove(), 3500);
+        }
+
+        async function refreshAuthState() {
+            try {
+                const data = await api("/auth/me");
+                csrfToken = data.csrfToken || "";
+                renderAuthState(data.user || null, data.expiresAt || null);
+            } catch (error) {
+                console.error("Could not check passenger session:", error);
+                renderAuthState(null);
+            }
+        }
+
+        function renderAuthState(user, expiresAt = null) {
+            currentUser = user;
+            const button = document.getElementById('accountBtn');
+            if (button) button.textContent = user ? (user.name.split(/\s+/)[0] || 'Account') : 'Sign in';
+            const signedIn = Boolean(user);
+            document.getElementById('signedInPanel').classList.toggle('hidden', !signedIn);
+            document.getElementById('authForm').classList.toggle('hidden', signedIn);
+            document.getElementById('authToggleWrap').classList.toggle('hidden', signedIn);
+            document.getElementById('guestContinueBtn').classList.toggle('hidden', signedIn);
+            if (signedIn) {
+                document.getElementById('signedInName').textContent = user.name;
+                document.getElementById('signedInEmail').textContent = user.email;
+                document.getElementById('sessionExpiryText').textContent = expiresAt ? `Session expires: ${new Date(expiresAt).toLocaleString()}` : `Signed in for up to 12 hours.`;
+            }
+            if (document.getElementById('savedTab') && !document.getElementById('savedTab').classList.contains('hidden')) loadSavedAndHistory();
+        }
+
+        function openAuthModal(mode = 'login') {
+            authMode = mode;
+            const modal = document.getElementById('authModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('authError').classList.add('hidden');
+            const signedIn = Boolean(currentUser);
+            document.getElementById('authTitle').textContent = signedIn ? 'Your passenger account' : (authMode === 'register' ? 'Create your account' : 'Sign in to TransitVision');
+            document.getElementById('authSubtitle').textContent = signedIn ? 'Manage your account session.' : 'Save your routes and keep your own search history.';
+            document.getElementById('authNameWrap').classList.toggle('hidden', signedIn || authMode !== 'register');
+            document.getElementById('authPassword').setAttribute('autocomplete', authMode === 'register' ? 'new-password' : 'current-password');
+            document.getElementById('authPassword').value = '';
+            document.getElementById('authSubmitBtn').textContent = authMode === 'register' ? 'Create account' : 'Sign in';
+            document.getElementById('authToggleWrap').innerHTML = authMode === 'register' ? `Already have an account? <button id="authToggleBtn" onclick="toggleAuthMode()" class="text-indigo-300 font-bold hover:underline">Sign in</button>` : `New to TransitVision? <button id="authToggleBtn" onclick="toggleAuthMode()" class="text-indigo-300 font-bold hover:underline">Create an account</button>`;
+            renderAuthState(currentUser);
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
+        }
+
+        function toggleAuthMode() { openAuthModal(authMode === 'login' ? 'register' : 'login'); }
+
+        async function submitAuthForm(event) {
+            event.preventDefault();
+            const errorBox = document.getElementById('authError');
+            errorBox.classList.add('hidden');
+            if (authReadyPromise) await authReadyPromise;
+            const payload = { email: document.getElementById('authEmail').value.trim(), password: document.getElementById('authPassword').value };
+            if (authMode === 'register') payload.name = document.getElementById('authName').value.trim();
+            const button = document.getElementById('authSubmitBtn');
+            button.disabled = true; button.textContent = 'Please wait…';
+            try {
+                const data = await api(authMode === 'register' ? '/auth/register' : '/auth/login', { method: 'POST', body: JSON.stringify(payload) });
+                csrfToken = data.csrfToken || csrfToken;
+                renderAuthState(data.user, null);
+                closeAuthModal();
+                showInlineMessage(authMode === 'register' ? 'Account created. Welcome to TransitVision!' : 'You are signed in.');
+                if (!document.getElementById('savedTab').classList.contains('hidden')) await loadSavedAndHistory();
+            } catch (error) {
+                errorBox.textContent = error.message; errorBox.classList.remove('hidden');
+            } finally {
+                button.disabled = false; button.textContent = authMode === 'register' ? 'Create account' : 'Sign in';
+            }
+        }
+
+        async function logoutPassenger() {
+            try {
+                await api('/auth/logout', { method: 'POST', body: '{}' });
+                csrfToken = '';
+                await refreshAuthState();
+                closeAuthModal();
+                showInlineMessage('You have signed out.');
+            } catch (error) { showInlineMessage(error.message, true); }
+        }
+
+        function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+        async function clearSavedJourneys() { try { await api("/saved", { method: "DELETE" }); await loadSavedAndHistory(); } catch (e) { showInlineMessage(e.message, true); } }
+        async function clearHistory() { try { await api("/history", { method: "DELETE" }); await loadSavedAndHistory(); } catch (e) { showInlineMessage(e.message, true); } }
+        async function removeSaved(id) { try { await api("/saved/" + encodeURIComponent(id), { method: "DELETE" }); await loadSavedAndHistory(); } catch (e) { showInlineMessage(e.message, true); } }
+
+    </script>
+</body>
+</html>

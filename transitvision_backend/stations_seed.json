@@ -1,0 +1,277 @@
+{
+  "AIROLI": {
+    "name": "Airoli Railway Station",
+    "lat": 19.1585,
+    "lon": 72.9986,
+    "police": "Airoli Station does not house a standalone GRP/RPF station inside terminal premises. Outpost desks are near West Concourse Booking Office (Platform 1). Major grievances fall under Rabale Police Station along Thane-Belapur Road[cite: 1].",
+    "policeHi": "Airoli Station ke andar standalone GRP/RPF thana nahi hai. Outpost desk West Concourse Booking Office (Platform 1) ke paas hai. Shikayatein Thane-Belapur Road sthit Rabale Police Station jati hain.",
+    "medical": "West Exit (Sector 3): Jayshree Medical Store (Shop No. 5 right by station) & Sai Genericos[cite: 1]. Sector 3 market road also has Zeelab Pharmacy and Shree Samarth Krupa Medical[cite: 1].",
+    "medicalHi": "West Exit (Sector 3): Jayshree Medical Store aur Sai Genericos. Sector 3 market road par Zeelab Pharmacy aur Shree Samarth Krupa Medical bhi hai.",
+    "platforms": {
+      "Platform 1 (Southbound - Vashi/Panvel)": [
+        {
+          "title": "Changing to Platform 2",
+          "titleHi": "Platform 2 par kaise jayein",
+          "steps": [
+            "Walk towards wide pedestrian subways located closer to center and ends of Platform 1[cite: 1].",
+            "Walk down ramp/stairs and pass under tracks[cite: 1].",
+            "Take opposite stairs up to reach Platform 2[cite: 1]."
+          ],
+          "stepsHi": [
+            "Platform 1 ke center aur ends ke paas bane wide pedestrian subways ki taraf chalein.",
+            "Ramp ya stairs se niche utrein aur tracks ke niche se gujrein.",
+            "Platform 2 par pahunchne ke liye samne wali stairs up lein."
+          ]
+        },
+        {
+          "title": "Ticket Counters & ATVMs",
+          "titleHi": "Ticket Counters aur ATVMs",
+          "steps": [
+            "West Side (Main Entry): Walk along Platform 1 toward central main concourse exit[cite: 1].",
+            "Find primary UTS Booking Office and ATVMs right inside main concourse hall[cite: 1].",
+            "East Side counter is often non-functional off-peak; stick to West Side[cite: 1]."
+          ],
+          "stepsHi": [
+            "West Side (Main Entry): Platform 1 ke sath central main concourse exit ki taraf chalein.",
+            "Main concourse hall ke andar primary UTS Booking Office aur ATVMs milenge.",
+            "East Side counter aksar off-peak band rehta hai; West Side hi use karein."
+          ]
+        },
+        {
+          "title": "Main Station Exit & Auto Stand",
+          "titleHi": "Main Station Exit aur Auto Stand",
+          "steps": [
+            "Walk directly off Platform 1 into main concourse for West Exit facing Sector 3[cite: 1].",
+            "Primary Auto-Rickshaw Stand is right at entrance (regular meters and share-autos)[cite: 1].",
+            "East Exit FOB leads onto Thane-Belapur Road facing Mindspace IT Park[cite: 1]."
+          ],
+          "stepsHi": [
+            "Sector 3 face karte hue West Exit ke liye seedhe Platform 1 se main concourse mein aayein.",
+            "Entrance par hi primary Auto-Rickshaw Stand hai (regular meters aur share autos).",
+            "East Exit FOB Thane-Belapur Road par Mindspace IT Park ki taraf nikalta hai."
+          ]
+        }
+      ],
+      "Platform 2 (Northbound - Thane)": [
+        {
+          "title": "Changing to Platform 1",
+          "titleHi": "Platform 1 par kaise jayein",
+          "steps": [
+            "Look for underground commuter subways near center and ends of platform[cite: 1].",
+            "Walk down ramp, walk through tunnel under tracks, and take stairs up directly onto Platform 1[cite: 1]."
+          ],
+          "stepsHi": [
+            "Platform ke center aur ends ke paas underground commuter subways dekhein.",
+            "Ramp se niche utrein, tunnel se tracks cross karein, aur seedhe Platform 1 ki stairs up lein."
+          ]
+        }
+      ]
+    }
+  },
+  "KOPARKHAIRANE": {
+    "name": "Koparkhairane Railway Station",
+    "lat": 19.1292,
+    "lon": 73.0031,
+    "police": "Security desk next to Platform 1 main booking window[cite: 1]. Formal complaints handled at Koparkhairane Police Station (Sector 4/6)[cite: 1].",
+    "policeHi": "Platform 1 main booking window ke paas security desk hai. Formal complaints Koparkhairane Police Station (Sector 4/6) mein hoti hain.",
+    "medical": "West Exit: Kalyani Medical Store and Laxmi Medical[cite: 1]. East Exit: Reliance Hospital is directly outside entrance area[cite: 1].",
+    "medicalHi": "West Exit: Kalyani Medical Store aur Laxmi Medical. East Exit: Entrance area ke bilkul bahar Reliance Hospital hai.",
+    "platforms": {
+      "Platform 1 (Southbound - Vashi/Panvel)": [
+        {
+          "title": "Ticket Counters & West Exit",
+          "titleHi": "Ticket Counters aur West Exit",
+          "steps": [
+            "Primary UTS Booking Office and ATVMs are inside West-side ground concourse hall (Sector 8A)[cite: 1].",
+            "Major Auto Stand is right outside gates[cite: 1]."
+          ],
+          "stepsHi": [
+            "Primary UTS Booking Office aur ATVMs West-side ground concourse hall (Sector 8A) ke andar hain.",
+            "Gates ke bilkul bahar major Auto Stand hai."
+          ]
+        }
+      ]
+    }
+  },
+  "GHANSOLI": {
+    "name": "Ghansoli Railway Station",
+    "lat": 19.1432,
+    "lon": 72.9998,
+    "police": "Police assistance desk adjacent to Platform 1 main booking window[cite: 1]. Ghansoli Police Outpost / Rabale jurisdiction[cite: 1].",
+    "policeHi": "Platform 1 main booking window ke paas police assistance desk hai. Ghansoli Police Outpost / Rabale jurisdiction.",
+    "medical": "West Exit: Ghansoli Medical & General Store and Asha Medical (2-min walk down station road)[cite: 1].",
+    "medicalHi": "West Exit: Ghansoli Medical & General Store aur Asha Medical (station road par 2 minute ki duri par).",
+    "platforms": {
+      "Platform 1 (Southbound)": [
+        {
+          "title": "Exiting to Residential Node & Auto Stand",
+          "titleHi": "Residential Node aur Auto Stand Exit",
+          "steps": [
+            "Walk straight off platform into main concourse for Sectors 1-15[cite: 1].",
+            "Massive Auto Stand right outside West gate[cite: 1]."
+          ],
+          "stepsHi": [
+            "Sectors 1-15 ke liye platform se seedhe main concourse mein chalein.",
+            "West gate ke bilkul bahar bada Auto Stand hai."
+          ]
+        }
+      ]
+    }
+  },
+  "TURBHE": {
+    "name": "Turbhe Junction Railway Station",
+    "lat": 19.0832,
+    "lon": 73.0152,
+    "police": "Dedicated GRP/RPF police booth near Platform 1 Main Booking Concourse[cite: 1].",
+    "policeHi": "Platform 1 Main Booking Concourse ke paas dedicated GRP/RPF police booth hai.",
+    "medical": "West Exit: Janata Medical Store and Balaji Medical right outside toward Turbhe Market[cite: 1].",
+    "medicalHi": "West Exit: Turbhe Market ki taraf bilkul bahar Janata Medical Store aur Balaji Medical hai.",
+    "platforms": {
+      "Platform 1 & 3 (Vashi/Panvel Bound)": [
+        {
+          "title": "Exiting to APMC Market & Turbhe Naka",
+          "titleHi": "APMC Market aur Turbhe Naka Exit",
+          "steps": [
+            "Head West off Platform 1 into main concourse toward APMC Grain Market[cite: 1].",
+            "Walk 3 minutes out to Turbhe Naka Bus Stop[cite: 1]."
+          ],
+          "stepsHi": [
+            "APMC Grain Market ki taraf Platform 1 se West main concourse mein jayein.",
+            "Turbhe Naka Bus Stop ke liye 3 minute chalein."
+          ]
+        }
+      ]
+    }
+  },
+  "RABALE": {
+    "name": "Rabale Railway Station",
+    "lat": 19.1491,
+    "lon": 72.9975,
+    "police": "Security help desk near Platform 1 Station Master room[cite: 1]. Rabale MIDC Police Station nearby[cite: 1].",
+    "policeHi": "Platform 1 Station Master room ke paas security help desk hai. Paas mein hi Rabale MIDC Police Station hai.",
+    "medical": "West Exit: Radhe Flavia Medical in Sector 29 market street[cite: 1].",
+    "medicalHi": "West Exit: Sector 29 market street mein Radhe Flavia Medical hai.",
+    "platforms": {
+      "Platform 1 (West Side - Residential)": [
+        {
+          "title": "Exiting to Sector 29 Gothivali",
+          "titleHi": "Sector 29 Gothivali Exit",
+          "steps": [
+            "Walk off Platform 1 into ground booking hall. Exit into Sector 29 with auto stand outside[cite: 1]."
+          ],
+          "stepsHi": [
+            "Platform 1 se ground booking hall mein aayein. Bahar auto stand ke sath Sector 29 mein exit karein."
+          ]
+        }
+      ]
+    }
+  },
+  "VASHI": {
+    "name": "Vashi Railway Station",
+    "lat": 19.0682,
+    "lon": 72.993,
+    "police": "Prominent GRP Police Station on ground floor near administrative wing[cite: 1]. RPF outpost active near main concourse[cite: 1].",
+    "policeHi": "Administrative wing ke paas ground floor par prominent GRP Police Station hai. Main concourse ke paas RPF outpost active hai.",
+    "medical": "Noble Plus Pharmacy and Wellness Forever (24/7 service outside station plaza)[cite: 1].",
+    "medicalHi": "Noble Plus Pharmacy aur Wellness Forever (station plaza ke bahar 24/7 service).",
+    "platforms": {
+      "Platform 1 & 2 (Trans-Harbour)": [
+        {
+          "title": "Main Concourse & Sector 30 Exit",
+          "titleHi": "Main Concourse aur Sector 30 Exit",
+          "steps": [
+            "Use central FOBs or escalators to reach upper concourse deck[cite: 1].",
+            "Follow signs for West Exit toward Inorbit Mall road and auto queue[cite: 1]."
+          ],
+          "stepsHi": [
+            "Upper concourse deck par pahunchne ke liye central FOBs ya escalators use karein.",
+            "Inorbit Mall road aur auto queue ki taraf West Exit ke signs follow karein."
+          ]
+        }
+      ],
+      "Platform 3 & 4 (Up Harbour to CSMT)": [
+        {
+          "title": "Exiting to International Infotech Park",
+          "titleHi": "International Infotech Park Exit",
+          "steps": [
+            "Walk off upper concourse deck directly into connected commercial complex towers 1 & 2[cite: 1]."
+          ],
+          "stepsHi": [
+            "Upper concourse deck se seedhe connected commercial complex towers 1 & 2 ke andar utrein."
+          ]
+        }
+      ]
+    }
+  },
+  "CBD_BELAPUR": {
+    "name": "CBD Belapur Railway Station",
+    "lat": 19.0232,
+    "lon": 73.0375,
+    "police": "Dedicated GRP and RPF Outpost on ground floor near Station Master Office[cite: 1].",
+    "policeHi": "Station Master Office ke paas ground floor par dedicated GRP aur RPF Outpost hai.",
+    "medical": "Apollo Pharmacy 3 minutes walk near Sakal Bhavan road junction[cite: 1].",
+    "medicalHi": "Sakal Bhavan road junction ke paas 3 minute ki walk par Apollo Pharmacy hai.",
+    "platforms": {
+      "Platform 1 & 2": [
+        {
+          "title": "Main Concourse & Auto Stand",
+          "titleHi": "Main Concourse aur Auto Stand",
+          "steps": [
+            "Primary UTS booking hall at center of ground floor[cite: 1]. Exit toward commercial sector[cite: 1]."
+          ],
+          "stepsHi": [
+            "Ground floor ke center mein primary UTS booking hall hai. Commercial sector ki taraf exit karein."
+          ]
+        }
+      ]
+    }
+  },
+  "PANVEL": {
+    "name": "Panvel Junction Railway Station",
+    "lat": 18.9894,
+    "lon": 73.1132,
+    "police": "Full-scale GRP Station and RPF Thana on Platform 1 ground floor[cite: 1]. EMR operational near station master office[cite: 1].",
+    "policeHi": "Platform 1 ground floor par full-scale GRP Station aur RPF Thana hai. Station master office ke paas EMR operational hai.",
+    "medical": "Wellness Forever across West Exit station parking zone[cite: 1].",
+    "medicalHi": "West Exit station parking zone ke samne Wellness Forever hai.",
+    "platforms": {
+      "Platform 1, 2 & 3 (Suburban Local Side)": [
+        {
+          "title": "Exits: New Panvel vs Old Panvel",
+          "titleHi": "Exits: New Panvel ya Old Panvel",
+          "steps": [
+            "East Exit: Auto stand for New Panvel sectors and colleges[cite: 1].",
+            "West Exit: 5-7 min walk to ST Bus Depot[cite: 1]."
+          ],
+          "stepsHi": [
+            "East Exit: New Panvel sectors aur colleges ke liye auto stand.",
+            "West Exit: ST Bus Depot ke liye 5-7 minute ki walk."
+          ]
+        }
+      ]
+    }
+  },
+  "KHARGHAR": {
+    "name": "Kharghar Railway Station",
+    "lat": 19.0478,
+    "lon": 73.0641,
+    "police": "Railway Police Help Desk adjacent to main booking office on West Side[cite: 1].",
+    "policeHi": "West Side par main booking office ke paas Railway Police Help Desk hai.",
+    "medical": "Apollo Pharmacy within 2-minute walk outside West Exit towards Sector 3[cite: 1].",
+    "medicalHi": "West Exit ke bahar Sector 3 ki taraf 2 minute ki walk par Apollo Pharmacy hai.",
+    "platforms": {
+      "Platform 1 (West Side - Main Entrance)": [
+        {
+          "title": "Exiting & Transport (Sector 3 / Highway)",
+          "titleHi": "Exiting aur Transport (Sector 3 / Highway)",
+          "steps": [
+            "Main UTS Booking Office inside concourse[cite: 1]. Auto stand outside for Hiranandani & colleges[cite: 1]."
+          ],
+          "stepsHi": [
+            "Concourse ke andar Main UTS Booking Office hai. Hiranandani aur colleges ke liye bahar auto stand hai."
+          ]
+        }
+      ]
+    }
+  }
+}

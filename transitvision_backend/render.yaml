@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: transitvision
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: LOGIN_SESSION_HOURS
+        value: "12"
