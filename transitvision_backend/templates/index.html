@@ -68,6 +68,12 @@
         /* Font Scaling Modes */
         body.text-lg-mode { font-size: 1.15rem; }
         body.text-xl-mode { font-size: 1.3rem; }
+        /* Text scaler: Tailwind text-xs/text-sm classes otherwise override body font-size. */
+        body#appBody.text-lg-mode { zoom: 1.08; }
+        body#appBody.text-xl-mode { zoom: 1.16; }
+        body#appBody.text-lg-mode :is(select,input,textarea) { font-size: 17px !important; }
+        body#appBody.text-xl-mode :is(select,input,textarea) { font-size: 19px !important; }
+        body#appBody.text-lg-mode #stepsList > div, body#appBody.text-xl-mode #stepsList > div { line-height: 1.75 !important; }
     
         /* TransitVision 2.0 — redesigned responsive dashboard */
         :root { color-scheme: dark; --tv-bg:#07111f; --tv-panel:#0e1c2d; --tv-panel2:#13263a; --tv-line:rgba(148,190,214,.18); --tv-mint:#4de0bd; --tv-cyan:#67d9f4; }
@@ -535,113 +541,137 @@
         // OCR recognizer uses the legacy station codes; map them to the current database keys.
         const OCR_STATION_KEY_MAP = {AIROLI:'airoli', KOPARKHAIRANE:'koparkhairane', GHANSOLI:'ghansoli', TURBHE:'turbhe', RABALE:'rabale', VASHI:'vashi', CBD_BELAPUR:'cbd-belapur', PANVEL:'panvel', KHARGHAR:'kharghar'};
         let STATION_DB = {};
-        // Roman-Hinglish fallback for station content that has no hand-written translation.
-        // Keeps names, numbers, URLs, and railway abbreviations unchanged.
-        function toRomanHinglish(value) {
-            if (Array.isArray(value)) return value.map(toRomanHinglish);
-            if (typeof value !== 'string' || !value.trim()) return value;
+        /* Roman Hinglish conversion for station content. Prefer whole phrases/sentences first;
+           then apply a conservative railway/travel vocabulary so long database fields do not
+           silently fall back to English. Station names, acronyms, road names and numbers stay intact. */
+        function toRomanHinglish(input) {
+            if (input === null || input === undefined) return '';
+            let text = String(input);
+            if (!text.trim()) return text;
+            const protectedTranslations = [];
+            const protect = (pattern, makeTranslation) => {
+                text = text.replace(pattern, (...args) => {
+                    const token = `@@TVH${protectedTranslations.length}@@`;
+                    protectedTranslations.push([token, makeTranslation(...args)]);
+                    return token;
+                });
+            };
+            protect(/For formal legal matters or major complaints, the jurisdiction falls under the main ([A-Za-z -]+ Police Station) situated in the township\./gi,
+                (_full, station) => `Formal legal matters ya badi complaints ke liye, township mein sthit main ${station} ke jurisdiction mein aata hai.`);
+            protect(/([A-Za-z -]+ Station) does not house a full-scale standalone Government Railway Police \(GRP\) or Railway Protection Force \(RPF\) station inside the terminal premises\./gi,
+                (_full, station) => `${station} ke premises ke andar alag se Government Railway Police (GRP) ya Railway Protection Force (RPF) ka full-scale station nahi hai.`);
             const phrases = [
-                [/There are two wide pedestrian subways located closer to the center and the ends of the platforms\./gi, 'Platforms ke center aur ends ke paas do wide pedestrian subways hain.'],
-                [/Walk down the ramp\/stairs, pass under the tracks, and take the opposite stairs up to reach (Platform \d+)\./gi, 'Ramp ya stairs se neeche jaayein, tracks ke neeche se cross karein, aur saamne wali stairs se upar jaakar $1 par pahunchein.'],
-                [/Trains heading South towards/gi, 'South ki taraf jaane wali trains'],
-                [/Trains heading North towards/gi, 'North ki taraf jaane wali trains'],
-                [/Platform directions/gi, 'Platform ki directions'],
-                [/West Side \(Main Entry\)/gi, 'West Side (Main Entry)'],
-                [/East Side/gi, 'East Side'],
-                [/Walk along/gi, 'ke saath-saath chalein'],
-                [/toward the central main concourse exit/gi, 'central main concourse exit ki taraf'],
-                [/are located right inside/gi, 'bilkul andar maujood hain'],
-                [/before you step out/gi, 'bahar nikalne se pehle'],
-                [/It is highly recommended to/gi, 'Yeh strongly recommended hai ki aap'],
-                [/Please select both/gi, 'Kripya dono select karein:'],
+                [/The jurisdiction falls under the main ([A-Za-z -]+ Police Station) situated in the township\./gi, 'Is area ka jurisdiction township mein sthit main $1 ke under aata hai.'],
+                [/([A-Za-z -]+ Station) does not house a full-scale standalone Government Railway Police \(GRP\) or Railway Protection Force \(RPF\) station inside the terminal premises\./gi, '$1 ke premises ke andar alag se full-scale Government Railway Police (GRP) ya Railway Protection Force (RPF) station nahi hai.'],
+                [/For minor local issues, minor railway police outposts or station master assistance can be found right next to the Main Concourse Booking Office on the West Side \(Platform (\d+)\)\./gi, 'Chhoti local pareshani ke liye West Side (Platform $2) par Main Concourse Booking Office ke bilkul paas railway police help point ya Station Master se madad mil sakti hai.'],
+                [/If you need to report major railway-related grievances or register a formal GRP complaint, the jurisdiction falls under the ([A-Za-z -]+ Police Station) or the ([A-Za-z -]+ Police Station), which are located a short distance away along the ([A-Za-z– -]+) corridor\./gi, 'Railway se judi badi shikayat report karni ho ya formal GRP complaint darj karni ho, toh $1 ya $2 ke paas sampark karein. Dono $3 corridor par thodi door sthit hain.'],
+                [/For formal legal matters or major complaints/gi, 'Formal legal matters ya badi complaints ke liye'],
+                [/the jurisdiction falls under/gi, 'ka jurisdiction ke under aata hai'],
+                [/situated in the township/gi, 'township mein sthit'],
+                [/inside the terminal premises/gi, 'station premises ke andar'],
+                [/does not house/gi, 'mein ... nahi hai'],
+                [/a full-scale standalone/gi, 'alag se poora'],
+                [/located a short distance away/gi, 'thodi door sthit'],
+                [/which are located/gi, 'jo sthit hain'],
+                [/major railway-related grievances/gi, 'railway se judi badi shikayatein'],
+                [/register a formal/gi, 'formal ... darj karein'],
+                [/right next to/gi, 'ke bilkul paas'],
+                [/There are two wide pedestrian subways located closer to the center and the ends of the platforms\./gi, 'Platform ke beech aur dono taraf paidal aane-jaane ke liye do chaudi underground subways hain.'],
+                [/Walk down the ramp\/stairs, pass under the tracks, and take the opposite stairs up to reach Platform (\d+)\./gi, 'Ramp ya seedhiyon se neeche jaayein, tracks ke neeche se guzrein, aur saamne wali seedhiyon se chadhkar Platform $1 par pahunchein.'],
+                [/Use the underground commuter subways or the overhead FOB\./gi, 'Underground subway ya upar wale Foot Over Bridge (FOB) ka istemal karein.'],
+                [/Walk down the subway ramp, follow the path under the tracks, and take the stairs up directly onto Platform (\d+)\./gi, 'Subway ke ramp se neeche jaayein, tracks ke neeche wale raaste par chalein, phir seedhiyon se chadhkar seedhe Platform $1 par pahunchein.'],
+                [/Please select both Source and Destination stations first\.?/gi, 'Pehle Source aur Destination dono stations chunein.'],
+                [/Please select both Platform and Feature\.?/gi, 'Platform aur Feature dono chunein.'],
+                [/Choose a destination station before activating GPS\.?/gi, 'GPS chalu karne se pehle destination station chunein.'],
+                [/Station data is still loading or the backend is unavailable\. Please wait and retry\./gi, 'Station ki jaankari abhi load ho rahi hai ya server filhaal available nahi hai. Thodi der rukkar dobara try karein.'],
+                [/No separate overview text is provided for this station in the supplied database\./gi, 'Diye gaye data mein is station ka alag overview available nahi hai.'],
                 [/Select a station to see its overview\./gi, 'Overview dekhne ke liye station chunein.'],
-                [/Station Overview/gi, 'Station ka Overview'],
-                [/Platform/gi, 'Platform'],
-                [/Ticket Counters/gi, 'Ticket Counters'],
-                [/Automated Ticket Vending Machines/gi, 'Automatic Ticket Vending Machines'],
-                [/main entrance/gi, 'main entrance'],
-                [/main entry/gi, 'main entry'],
-                [/exit/gi, 'exit'],
-                [/entrance/gi, 'entry'],
-                [/located/gi, 'maujood hai'],
-                [/available/gi, 'available hai'],
-                [/nearby/gi, 'paas mein'],
-                [/near/gi, 'ke paas'],
-                [/towards/gi, 'ki taraf'],
-                [/toward/gi, 'ki taraf'],
-                [/between/gi, 'ke beech'],
-                [/opposite/gi, 'saamne'],
-                [/straight/gi, 'seedha'],
-                [/left/gi, 'baayein'],
-                [/right/gi, 'daayein'],
-                [/turn/gi, 'mudein'],
-                [/continue/gi, 'aage badhein'],
-                [/walk/gi, 'chalein'],
-                [/take the stairs/gi, 'stairs lein'],
-                [/stairs/gi, 'stairs'],
-                [/ramp/gi, 'ramp'],
-                [/cross/gi, 'cross karein'],
-                [/reach/gi, 'pahunchein'],
-                [/follow/gi, 'follow karein'],
-                [/use the/gi, 'ka use karein'],
-                [/is located/gi, 'maujood hai'],
-                [/are located/gi, 'maujood hain'],
-                [/is available/gi, 'available hai'],
-                [/are available/gi, 'available hain'],
-                [/and then/gi, 'aur phir'],
-                [/then/gi, 'phir'],
-                [/from here/gi, 'yahan se'],
-                [/to reach/gi, 'pahunchne ke liye'],
-                [/you can/gi, 'aap'],
-                [/please/gi, 'kripya'],
-                [/the station/gi, 'station'],
-                [/platforms/gi, 'platforms'],
-                [/facilities/gi, 'suvidhayein'],
-                [/medical store/gi, 'medical store'],
-                [/railway police station/gi, 'Railway Police Station'],
-                [/bus stand/gi, 'bus stand'],
-                [/auto stand/gi, 'auto stand'],
-                [/ticket booking office/gi, 'ticket booking office'],
-                [/closed during off-peak hours/gi, 'kam bheed wale samay par band ho sakta hai'],
-                [/is often non-functional/gi, 'aksar kaam nahi karta'],
-                [/is highly recommended/gi, 'strongly recommended hai'],
-                [/located/gi, 'maujood'],
-                [/nearby/gi, 'paas mein'],
-                [/available/gi, 'available'],
-                [/approximately/gi, 'lagbhag'],
-                [/minutes/gi, 'minutes'],
-                [/minute/gi, 'minute'],
-                [/meters/gi, 'meters'],
-                [/metres/gi, 'meters'],
-                [/kilometers/gi, 'kilometers'],
-                [/km/gi, 'km'],
-                [/from/gi, 'se'],
-                [/towards/gi, 'ki taraf'],
-                [/and/gi, 'aur'],
-                [/or/gi, 'ya'],
-                [/please note/gi, 'dhyan dein'],
-                [/information/gi, 'jaankari'],
-                [/details/gi, 'details'],
-                [/follow the signs/gi, 'signs follow karein'],
-                [/main concourse/gi, 'main concourse'],
-                [/platform access/gi, 'platform tak pahunch'],
-                [/ground level/gi, 'ground level'],
-                [/first level/gi, 'first level'],
-                [/upper level/gi, 'upper level']
+                [/Walk straight for about (\d+)[–-](\d+) minutes?/gi, 'Seedha lagbhag $1–$2 minute chalein'],
+                [/within a (\d+)[–-](\d+) minute walking distance/gi, '$1–$2 minute paidal chalne ki doori par'],
+                [/located right inside this main concourse hall before you step out/gi, 'bahar nikalne se pehle main concourse hall ke andar hi sthit hain'],
+                [/For a wider variety of food, step out of the West Exit\./gi, 'Zyada food options ke liye West Exit se bahar niklein.'],
+                [/Once you step out of the station gate/gi, 'Station gate se bahar nikalte hi'],
+                [/If you exit via the FOB toward the East Side/gi, 'Agar aap FOB se East Side ki taraf nikalte hain'],
+                [/For formal legal matters or major complaints/gi, 'Formal legal matter ya badi complaint ke liye'],
+                [/You do not need to walk far for medicines/gi, 'Dawaiyon ke liye aapko zyada door chalne ki zaroorat nahi hai'],
+                [/It is highly recommended to use/gi, 'Iska istemal karna zyada behtar rahega'],
+                [/Commuters are advised to/gi, 'Passengers ko salah di jaati hai ki'],
+                [/located adjacent to/gi, 'ke bilkul paas sthit'],
+                [/situated right outside/gi, 'bilkul bahar sthit'],
+                [/right outside the station exits/gi, 'station ke exits ke bilkul bahar'],
+                [/the main, highly-organized stand/gi, 'main aur achhi tarah se vyavasthit stand'],
+                [/frequent (NMMT|BEST) buses connect to/gi, 'regular $1 buses se in jagahon ke liye connection milta hai:'],
+                [/Walk directly out of/gi, 'Seedhe bahar niklein'],
+                [/Walk straight/gi, 'Seedha chalein'], [/Walk along/gi, 'ke saath-saath chalein'],
+                [/Walk down/gi, 'neeche jaayein'], [/walk down/gi, 'neeche jaayein'],
+                [/take the stairs up/gi, 'seedhiyon se upar jaayein'], [/pass under the tracks/gi, 'tracks ke neeche se guzrein'],
+                [/cross over to/gi, 'cross karke ... ki taraf jaayein'], [/Cross over to/gi, 'cross karke ... ki taraf jaayein'],
+                [/step out of/gi, 'se bahar niklein'], [/Step out of/gi, 'se bahar niklein'],
+                [/you will find/gi, 'aapko milega'], [/You will find/gi, 'Aapko milega'],
+                [/are located/gi, 'sthit hain'], [/is located/gi, 'sthit hai'], [/are situated/gi, 'sthit hain'],
+                [/is situated/gi, 'sthit hai'], [/is available/gi, 'available hai'], [/are available/gi, 'available hain'],
+                [/located near/gi, 'ke paas sthit'], [/right next to/gi, 'ke bilkul paas'], [/close to/gi, 'ke paas'],
+                [/towards/gi, 'ki taraf'], [/toward/gi, 'ki taraf'], [/heading South/gi, 'south ki taraf jaati hain'], [/heading North/gi, 'north ki taraf jaati hain'],
+                [/For minor local issues/gi, 'Chhoti local pareshani ke liye'], [/If you need to report/gi, 'Agar aap report karna chahte hain'],
+                [/located a short distance away/gi, 'thodi doori par sthit hai'], [/Walking just a minute further/gi, 'Ek minute aur aage paidal chalne par'],
+                [/Inside the Station/gi, 'Station ke andar'], [/Outside the Station/gi, 'Station ke bahar'],
+                [/Main Station Exit/gi, 'Station ka main exit'], [/Ticket Counters/gi, 'Ticket counters'],
+                [/Drinking Water/gi, 'Peene ka paani'], [/Restrooms/gi, 'Toilet'], [/Food & Basic Amenities/gi, 'Khana aur zaroori suvidhayein'],
+                [/Auto-Rickshaw Stand/gi, 'Auto-rickshaw stand'], [/Auto Stand/gi, 'Auto stand'], [/Bus Stand/gi, 'Bus stand'],
+                [/Main Entrance/gi, 'Main entry'], [/West Side/gi, 'West side'], [/East Side/gi, 'East side'],
+                [/West Exit/gi, 'West exit'], [/East Exit/gi, 'East exit'], [/main concourse/gi, 'main concourse'],
+                [/public restrooms/gi, 'public toilets'], [/water taps/gi, 'paani ke taps'], [/walking distance/gi, 'paidal chalne ki doori'],
+                [/located right outside/gi, 'bilkul bahar sthit'], [/For a proper meal/gi, 'Proper meal ke liye'],
+                [/For a wider variety/gi, 'Aur zyada options ke liye'], [/highly reliable/gi, 'kaafi bharosemand'],
+                [/major railway-related grievances/gi, 'railway se judi badi shikayat'], [/formal GRP complaint/gi, 'formal GRP complaint'],
+                [/is often non-functional or closed during off-peak hours/gi, 'off-peak hours mein aksar band ya kaam nahi karta'],
+                [/frequent NMMT and BEST buses/gi, 'regular NMMT aur BEST buses'], [/from here/gi, 'yahan se'],
+                [/Walk/gi, 'Chalein'], [/walk/gi, 'chalein'], [/Exit via/gi, 'se bahar niklein'], [/Exit through/gi, 'se bahar niklein'],
+                [/find options like/gi, 'jaise options milenge'], [/which are highly reliable for/gi, 'jo ... ke liye bharosemand hain'],
+                [/For /g, 'Ke liye '], [/the station/gi, 'station'], [/the platform/gi, 'platform'],
+                [/and nearby/gi, 'aur aas-paas'], [/nearby/gi, 'aas-paas'], [/different sectors/gi, 'alag-alag sectors'],
+                [/different/gi, 'alag-alag'], [/available/gi, 'available'], [/located/gi, 'sthit'], [/primary/gi, 'main'],
+                [/main road/gi, 'main road'], [/about/gi, 'lagbhag'], [/minute walk/gi, 'minute paidal'],
+                [/minutes?/gi, 'minute'], [/towards/gi, 'ki taraf'], [/connect to/gi, 'ke liye connection dete hain'],
+                [/located right inside/gi, 'ke andar hi sthit'], [/right outside/gi, 'bilkul bahar'],
+                [/station gate/gi, 'station gate'], [/platform length/gi, 'poore platform par'],
+                [/public/gi, 'public'], [/near the/gi, 'ke paas'], [/near/gi, 'ke paas'],
+                [/the main/gi, 'main'], [/right at the entrance/gi, 'entry ke bilkul paas'],
+                [/the opposite side/gi, 'saamne wali taraf'], [/opposite the station/gi, 'station ke saamne'],
+                [/you can/gi, 'aap'], [/you will/gi, 'aapko'], [/there is/gi, 'yahan hai'], [/there are/gi, 'yahan hain'],
+                [/please/gi, 'kripya'], [/use the/gi, 'ka istemal karein'], [/use/gi, 'istemal karein'],
+                [/located/gi, 'sthit'], [/right outside/gi, 'bilkul bahar'], [/Walk straight/gi, 'Seedha chalein']
             ];
-            let result = value;
-            phrases.forEach(([pattern, replacement]) => { result = result.replace(pattern, replacement); });
-            return result;
+            for (const [pattern, replacement] of phrases) text = text.replace(pattern, replacement);
+            // Common instruction vocabulary; intentionally preserve proper names, acronyms and platform numbers.
+            const words = [
+                [/\bExit\b/g,'exit'], [/\bexit\b/g,'exit'], [/\bstation\b/gi,'station'], [/\bplatforms\b/gi,'platforms'], [/\bplatform\b/gi,'platform'],
+                [/\btrains\b/gi,'trains'], [/\btrain\b/gi,'train'], [/\btracks\b/gi,'tracks'], [/\btrack\b/gi,'track'],
+                [/\bstairs\b/gi,'seedhiyan'], [/\bstaircase\b/gi,'seedhiyan'], [/\bramp\b/gi,'ramp'], [/\bsubways\b/gi,'subways'], [/\bsubway\b/gi,'subway'],
+                [/\bturn left\b/gi,'baayein mudein'], [/\bturn right\b/gi,'daayein mudein'], [/\bleft\b/gi,'baayi taraf'], [/\bright\b/gi,'daayi taraf'],
+                [/\bwalk\b/gi,'chalein'], [/\bwalking\b/gi,'paidal chalna'], [/\bgo\b/gi,'jaayein'], [/\bhead\b/gi,'ki taraf jaayein'],
+                [/\bfind\b/gi,'dhoondhein'], [/\blook for\b/gi,'dhoondhein'], [/\bpass\b/gi,'guzrein'], [/\bthrough\b/gi,'se hokar'], [/\bunder\b/gi,'ke neeche'],
+                [/\bnearby\b/gi,'aas-paas'], [/\bnear\b/gi,'ke paas'], [/\binside\b/gi,'andar'], [/\boutside\b/gi,'bahar'], [/\bwithin\b/gi,'ke andar'],
+                [/\bmain\b/gi,'main'], [/\bside\b/gi,'taraf'], [/\bentry\b/gi,'entry'], [/\bentrance\b/gi,'entry'], [/\bbooking office\b/gi,'ticket booking office'],
+                [/\bticket counters\b/gi,'ticket counters'], [/\bticket counter\b/gi,'ticket counter'], [/\bmedical stores\b/gi,'medical stores'], [/\bmedical store\b/gi,'medical store'],
+                [/\bpharmacy\b/gi,'pharmacy'], [/\bmedicines\b/gi,'dawaiyan'], [/\bmedicine\b/gi,'dawai'], [/\bwater\b/gi,'paani'], [/\bfood\b/gi,'khana'],
+                [/\bavailable\b/gi,'available'], [/\bopen\b/gi,'khula'], [/\bclosed\b/gi,'band'], [/\bconnect\b/gi,'connection dete'], [/\bminutes\b/gi,'minute'],
+                [/\bminute\b/gi,'minute'], [/\babout\b/gi,'lagbhag'], [/\bapproximately\b/gi,'lagbhag'], [/\bfrom here\b/gi,'yahan se'],
+                [/\buse\b/gi,'istemal karein'], [/\bplease\b/gi,'kripya'], [/\bwalk straight\b/gi,'seedha chalein'], [/\bexit\b/gi,'bahar niklein']
+            ];
+            for (const [pattern, replacement] of words) text = text.replace(pattern, replacement);
+            text = text.replace(/[ \t]+/g, ' ').replace(/\n[ \t]+/g, '\n').trim();
+            protectedTranslations.forEach(([token, translation]) => { text = text.replace(token, translation); });
+            return text;
         }
-
         // Normalize every supplied feature for the language-toggle renderer.
         Object.values(BUILT_IN_STATION_DB).forEach(station => {
-            station.overviewHi = station.overviewHi || toRomanHinglish(station.overview || '');
-            station.policeHi = station.policeHi || toRomanHinglish(station.police || 'Railway Police ki jaankari station par confirm karein.');
-            station.medicalHi = station.medicalHi || toRomanHinglish(station.medical || 'Medical store ki location ke liye station ke staff se poochhein.');
+            station.overviewHi = (!station.overviewHi || station.overviewHi.trim() === (station.overview || '').trim()) ? toRomanHinglish(station.overview || '') : station.overviewHi;
+            station.policeHi = (!station.policeHi || station.policeHi.trim() === (station.police || '').trim()) ? toRomanHinglish(station.police || '') : station.policeHi;
+            station.medicalHi = (!station.medicalHi || station.medicalHi.trim() === (station.medical || '').trim()) ? toRomanHinglish(station.medical || '') : station.medicalHi;
             Object.values(station.platforms || {}).forEach(features => features.forEach(feature => {
-                if (!feature.titleHi) feature.titleHi = toRomanHinglish(feature.title);
-                if (!feature.stepsHi) feature.stepsHi = toRomanHinglish(feature.steps);
+                feature.titleHi = (!feature.titleHi || feature.titleHi === feature.title) ? toRomanHinglish(feature.title || '') : feature.titleHi;
+                feature.stepsHi = (!feature.stepsHi || feature.stepsHi === feature.steps) ? (Array.isArray(feature.steps) ? feature.steps.map(toRomanHinglish) : toRomanHinglish(feature.steps || '')) : feature.stepsHi;
             }));
         });
         let gpsWatchId = null;
@@ -769,12 +799,15 @@
             const body = document.getElementById('appBody');
             const fontBtn = document.getElementById('fontBtn');
             body.classList.remove('text-lg-mode', 'text-xl-mode');
+            body.style.setProperty('--tv-font-scale', '1');
             fontState = (fontState + 1) % 3;
             if (fontState === 1) {
                 body.classList.add('text-lg-mode');
+                body.style.setProperty('--tv-font-scale', '1.18');
                 fontBtn.innerText = isHinglish ? "Bada" : "Large";
             } else if (fontState === 2) {
                 body.classList.add('text-xl-mode');
+                body.style.setProperty('--tv-font-scale', '1.38');
                 fontBtn.innerText = isHinglish ? "Bahut Bada" : "Extra Large";
             } else {
                 fontBtn.innerText = "Normal";
@@ -1070,7 +1103,7 @@
                 station.platforms[oldPlatform].forEach((feature, index) => {
                     const option = document.createElement('option');
                     option.value = String(index);
-                    option.textContent = isHinglish ? (feature.titleHi || feature.title) : feature.title;
+                    option.textContent = isHinglish ? (feature.titleHi && feature.titleHi !== feature.title ? feature.titleHi : toRomanHinglish(feature.title || '')) : feature.title;
                     featureSelect.appendChild(option);
                 });
                 featureSelect.value = oldFeature;
@@ -1088,7 +1121,7 @@
                 return;
             }
             heading.textContent = (isHinglish ? 'Station ka Overview — ' : 'Station Overview — ') + station.name;
-            const overview = isHinglish ? (station.overviewHi || toRomanHinglish(station.overview || '')) : (station.overview || '');
+            const overview = isHinglish ? (station.overviewHi && station.overviewHi !== station.overview ? station.overviewHi : toRomanHinglish(station.overview || '')) : (station.overview || '');
             body.textContent = overview || (isHinglish ? 'Is station ke liye overview text database mein nahi diya gaya.' : 'No separate overview text is provided for this station in the supplied database.');
         }
 
@@ -1119,7 +1152,7 @@
             features.forEach((feature, index) => {
                 const option = document.createElement('option');
                 option.value = String(index);
-                option.textContent = isHinglish ? (feature.titleHi || feature.title) : feature.title;
+                option.textContent = isHinglish ? (feature.titleHi && feature.titleHi !== feature.title ? feature.titleHi : toRomanHinglish(feature.title || '')) : feature.title;
                 featureSelect.appendChild(option);
             });
         }
@@ -1140,14 +1173,14 @@
                 stationKey: selectedTargetStationKey,
                 stationName: station.name,
                 platform: platName,
-                featureTitle: isHinglish ? feature.titleHi : feature.title,
+                featureTitle: isHinglish ? (feature.titleHi && feature.titleHi !== feature.title ? feature.titleHi : toRomanHinglish(feature.title || '')) : feature.title,
                 steps: feature.steps,
                 stepsHi: feature.stepsHi
             };
 
             document.getElementById('visualTitle').innerText = `${station.name} - ${activeSelectionData.featureTitle}`;
 
-            const stepsToRender = isHinglish ? feature.stepsHi : feature.steps;
+            const stepsToRender = isHinglish ? ((feature.stepsHi && feature.stepsHi !== feature.steps) ? feature.stepsHi : (feature.steps || []).map(toRomanHinglish)) : feature.steps;
             const stepsList = document.getElementById('stepsList');
             stepsList.innerHTML = "";
             stepsToRender.forEach((step, idx) => {
@@ -1159,8 +1192,8 @@
                 `;
             });
 
-            document.getElementById('policeInfo').innerText = String(isHinglish ? (station.policeHi || toRomanHinglish(station.police || '')) : station.police).replace(/\s*\[cite:\s*\d+\]/gi, '');
-            document.getElementById('medicalInfo').innerText = String(isHinglish ? (station.medicalHi || toRomanHinglish(station.medical || '')) : station.medical).replace(/\s*\[cite:\s*\d+\]/gi, '');
+            document.getElementById('policeInfo').innerText = String(isHinglish ? (station.policeHi && station.policeHi !== station.police ? station.policeHi : toRomanHinglish(station.police || '')) : station.police).replace(/\s*\[cite:\s*\d+\]/gi, '');
+            document.getElementById('medicalInfo').innerText = String(isHinglish ? (station.medicalHi && station.medicalHi !== station.medical ? station.medicalHi : toRomanHinglish(station.medical || '')) : station.medical).replace(/\s*\[cite:\s*\d+\]/gi, '');
 
             document.getElementById('policeMapLink').href = `https://www.google.com/maps/search/?api=1&query=Railway+Police+Station+${encodeURIComponent(station.name)}`;
             document.getElementById('medicalMapLink').href = `https://www.google.com/maps/search/?api=1&query=Medical+Pharmacy+near+${encodeURIComponent(station.name)}`;
