@@ -535,11 +535,113 @@
         // OCR recognizer uses the legacy station codes; map them to the current database keys.
         const OCR_STATION_KEY_MAP = {AIROLI:'airoli', KOPARKHAIRANE:'koparkhairane', GHANSOLI:'ghansoli', TURBHE:'turbhe', RABALE:'rabale', VASHI:'vashi', CBD_BELAPUR:'cbd-belapur', PANVEL:'panvel', KHARGHAR:'kharghar'};
         let STATION_DB = {};
+        // Roman-Hinglish fallback for station content that has no hand-written translation.
+        // Keeps names, numbers, URLs, and railway abbreviations unchanged.
+        function toRomanHinglish(value) {
+            if (Array.isArray(value)) return value.map(toRomanHinglish);
+            if (typeof value !== 'string' || !value.trim()) return value;
+            const phrases = [
+                [/There are two wide pedestrian subways located closer to the center and the ends of the platforms\./gi, 'Platforms ke center aur ends ke paas do wide pedestrian subways hain.'],
+                [/Walk down the ramp\/stairs, pass under the tracks, and take the opposite stairs up to reach (Platform \d+)\./gi, 'Ramp ya stairs se neeche jaayein, tracks ke neeche se cross karein, aur saamne wali stairs se upar jaakar $1 par pahunchein.'],
+                [/Trains heading South towards/gi, 'South ki taraf jaane wali trains'],
+                [/Trains heading North towards/gi, 'North ki taraf jaane wali trains'],
+                [/Platform directions/gi, 'Platform ki directions'],
+                [/West Side \(Main Entry\)/gi, 'West Side (Main Entry)'],
+                [/East Side/gi, 'East Side'],
+                [/Walk along/gi, 'ke saath-saath chalein'],
+                [/toward the central main concourse exit/gi, 'central main concourse exit ki taraf'],
+                [/are located right inside/gi, 'bilkul andar maujood hain'],
+                [/before you step out/gi, 'bahar nikalne se pehle'],
+                [/It is highly recommended to/gi, 'Yeh strongly recommended hai ki aap'],
+                [/Please select both/gi, 'Kripya dono select karein:'],
+                [/Select a station to see its overview\./gi, 'Overview dekhne ke liye station chunein.'],
+                [/Station Overview/gi, 'Station ka Overview'],
+                [/Platform/gi, 'Platform'],
+                [/Ticket Counters/gi, 'Ticket Counters'],
+                [/Automated Ticket Vending Machines/gi, 'Automatic Ticket Vending Machines'],
+                [/main entrance/gi, 'main entrance'],
+                [/main entry/gi, 'main entry'],
+                [/exit/gi, 'exit'],
+                [/entrance/gi, 'entry'],
+                [/located/gi, 'maujood hai'],
+                [/available/gi, 'available hai'],
+                [/nearby/gi, 'paas mein'],
+                [/near/gi, 'ke paas'],
+                [/towards/gi, 'ki taraf'],
+                [/toward/gi, 'ki taraf'],
+                [/between/gi, 'ke beech'],
+                [/opposite/gi, 'saamne'],
+                [/straight/gi, 'seedha'],
+                [/left/gi, 'baayein'],
+                [/right/gi, 'daayein'],
+                [/turn/gi, 'mudein'],
+                [/continue/gi, 'aage badhein'],
+                [/walk/gi, 'chalein'],
+                [/take the stairs/gi, 'stairs lein'],
+                [/stairs/gi, 'stairs'],
+                [/ramp/gi, 'ramp'],
+                [/cross/gi, 'cross karein'],
+                [/reach/gi, 'pahunchein'],
+                [/follow/gi, 'follow karein'],
+                [/use the/gi, 'ka use karein'],
+                [/is located/gi, 'maujood hai'],
+                [/are located/gi, 'maujood hain'],
+                [/is available/gi, 'available hai'],
+                [/are available/gi, 'available hain'],
+                [/and then/gi, 'aur phir'],
+                [/then/gi, 'phir'],
+                [/from here/gi, 'yahan se'],
+                [/to reach/gi, 'pahunchne ke liye'],
+                [/you can/gi, 'aap'],
+                [/please/gi, 'kripya'],
+                [/the station/gi, 'station'],
+                [/platforms/gi, 'platforms'],
+                [/facilities/gi, 'suvidhayein'],
+                [/medical store/gi, 'medical store'],
+                [/railway police station/gi, 'Railway Police Station'],
+                [/bus stand/gi, 'bus stand'],
+                [/auto stand/gi, 'auto stand'],
+                [/ticket booking office/gi, 'ticket booking office'],
+                [/closed during off-peak hours/gi, 'kam bheed wale samay par band ho sakta hai'],
+                [/is often non-functional/gi, 'aksar kaam nahi karta'],
+                [/is highly recommended/gi, 'strongly recommended hai'],
+                [/located/gi, 'maujood'],
+                [/nearby/gi, 'paas mein'],
+                [/available/gi, 'available'],
+                [/approximately/gi, 'lagbhag'],
+                [/minutes/gi, 'minutes'],
+                [/minute/gi, 'minute'],
+                [/meters/gi, 'meters'],
+                [/metres/gi, 'meters'],
+                [/kilometers/gi, 'kilometers'],
+                [/km/gi, 'km'],
+                [/from/gi, 'se'],
+                [/towards/gi, 'ki taraf'],
+                [/and/gi, 'aur'],
+                [/or/gi, 'ya'],
+                [/please note/gi, 'dhyan dein'],
+                [/information/gi, 'jaankari'],
+                [/details/gi, 'details'],
+                [/follow the signs/gi, 'signs follow karein'],
+                [/main concourse/gi, 'main concourse'],
+                [/platform access/gi, 'platform tak pahunch'],
+                [/ground level/gi, 'ground level'],
+                [/first level/gi, 'first level'],
+                [/upper level/gi, 'upper level']
+            ];
+            let result = value;
+            phrases.forEach(([pattern, replacement]) => { result = result.replace(pattern, replacement); });
+            return result;
+        }
+
         // Normalize every supplied feature for the language-toggle renderer.
         Object.values(BUILT_IN_STATION_DB).forEach(station => {
+            station.overviewHi = station.overviewHi || toRomanHinglish(station.overview || '');
+            station.policeHi = station.policeHi || toRomanHinglish(station.police || 'Railway Police ki jaankari station par confirm karein.');
+            station.medicalHi = station.medicalHi || toRomanHinglish(station.medical || 'Medical store ki location ke liye station ke staff se poochhein.');
             Object.values(station.platforms || {}).forEach(features => features.forEach(feature => {
-                if (!feature.titleHi) feature.titleHi = feature.title;
-                if (!feature.stepsHi) feature.stepsHi = feature.steps;
+                if (!feature.titleHi) feature.titleHi = toRomanHinglish(feature.title);
+                if (!feature.stepsHi) feature.stepsHi = toRomanHinglish(feature.steps);
             }));
         });
         let gpsWatchId = null;
@@ -986,7 +1088,7 @@
                 return;
             }
             heading.textContent = (isHinglish ? 'Station ka Overview — ' : 'Station Overview — ') + station.name;
-            const overview = isHinglish ? (station.overviewHi || station.overview || '') : (station.overview || '');
+            const overview = isHinglish ? (station.overviewHi || toRomanHinglish(station.overview || '')) : (station.overview || '');
             body.textContent = overview || (isHinglish ? 'Is station ke liye overview text database mein nahi diya gaya.' : 'No separate overview text is provided for this station in the supplied database.');
         }
 
@@ -1057,8 +1159,8 @@
                 `;
             });
 
-            document.getElementById('policeInfo').innerText = String(isHinglish ? station.policeHi : station.police).replace(/\s*\[cite:\s*\d+\]/gi, '');
-            document.getElementById('medicalInfo').innerText = String(isHinglish ? station.medicalHi : station.medical).replace(/\s*\[cite:\s*\d+\]/gi, '');
+            document.getElementById('policeInfo').innerText = String(isHinglish ? (station.policeHi || toRomanHinglish(station.police || '')) : station.police).replace(/\s*\[cite:\s*\d+\]/gi, '');
+            document.getElementById('medicalInfo').innerText = String(isHinglish ? (station.medicalHi || toRomanHinglish(station.medical || '')) : station.medical).replace(/\s*\[cite:\s*\d+\]/gi, '');
 
             document.getElementById('policeMapLink').href = `https://www.google.com/maps/search/?api=1&query=Railway+Police+Station+${encodeURIComponent(station.name)}`;
             document.getElementById('medicalMapLink').href = `https://www.google.com/maps/search/?api=1&query=Medical+Pharmacy+near+${encodeURIComponent(station.name)}`;
